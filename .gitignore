@@ -1,0 +1,16 @@
+# Data cache
+cache/
+furusatonouzeidata/
+populationdata/
+*.parquet
+
+# Distribution / packaging
+dist/
+build.sh
+build/
+*.egg-info/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
