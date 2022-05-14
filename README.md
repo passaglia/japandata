@@ -1,7 +1,7 @@
 # JapanData
 
-![PyPI](https://img.shields.io/pypi/v/japandata?label=latest%20release)
-![PyPI - License](https://img.shields.io/pypi/l/japandata)
+[![PyPI](https://img.shields.io/pypi/v/japandata?label=latest%20release)](https://pypi.org/project/japandata/)
+[![PyPI - License](https://img.shields.io/pypi/l/japandata)](https://github.com/passaglia/japandata/blob/main/LICENSE.md)
 
 **JapanData** is a python package which provides access to datasets about Japan. It includes:
 
@@ -11,7 +11,7 @@
 
 Jupyter notebooks in the `/examples` folder demonstrate how to use these datasets.
 
-This package is provided under a MPL 2.0 license. Each dataset is subject to its own license as noted below. The datasets themselves are hosted at the companion repository [**JapanData-sources**](https://github.com/passaglia/japandata-sources). They are fetched by a local **JapanData** installation when first needed.
+This package is provided under a MPL 2.0 license. Each dataset is subject to its own license as noted below. The datasets are hosted at the companion repository [**JapanData-sources**](https://github.com/passaglia/japandata-sources) and are fetched by a local **JapanData** installation when first needed.
 
 ## Installation
 
@@ -82,13 +82,11 @@ from japandata.furusatonouzei.data import fndata
 
 -- Simplify the xarray / dataframe thingy.
 
--- Example scripts
-
--- Advanced Integration Scripts
-
 -- Show some method to add up the past few years of data
 
 -- Rename column keys to be more sensible -->
 
 <!-- ### GENERAL TODO
--- Look up census data? -->
+-- Look up census data? 
+
+-- Easy romaji converter for place names? -->

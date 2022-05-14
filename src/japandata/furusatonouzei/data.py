@@ -342,14 +342,18 @@ def clean_data(correct_errors=True, output_filename=None):
     return full_data_array
 
 try:
-    fndata = pd.read_parquet(CACHED_FILE).to_xarray()
+    furusato_arr = pd.read_parquet(CACHED_FILE).to_xarray()
 except FileNotFoundError:
     if not checkfordata():
         getdata()
-    fndata = clean_data(output_filename=CACHED_FILE)
+    furusato_arr = clean_data(output_filename=CACHED_FILE)
 
-fndata_df = fndata.to_dataframe().reset_index().fillna(value=np.nan)
-fndata_df = fndata_df.drop(fndata_df.loc[pd.isna(fndata_df['donations'])].index)
+furusato_df = furusato_arr.to_dataframe().reset_index().fillna(value=np.nan)
+furusato_df = furusato_df.drop(furusato_df.loc[pd.isna(furusato_df['donations'])].index)
 
-fndata_pref_df = fndata_df.groupby(['prefecture','year']).sum().reset_index()
+furusato_pref_df = furusato_df.groupby(['prefecture','year']).sum().reset_index()
 ## TODO: Drop or update the fields that don't just sum in the pref_df
+
+furusato_sum_df = furusato_df.groupby(['code','prefecturecity','prefecture', 'city']).sum().reset_index().drop('year', axis=1)
+furusato_pref_sum_df = furusato_pref_df.groupby(['prefecture']).sum().reset_index().drop('year', axis=1)
+## TODO: same here
