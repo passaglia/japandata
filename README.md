@@ -66,7 +66,13 @@ The data gradually becomes more detailed as time goes on, with early data contai
 
 -- Include Gaikokujin data and Age data 
 
--- Should I fix the rate columns? I think so, but maybe have a flag to allow getting the direct table output -->
+-- Should I fix the rate columns? I think so, but maybe have a flag to allow getting the direct table output 
+
+-- Is there a way to compute fertility rate? Need to implement age data for that.
+
+-- Working population: 15-64
+
+-->
 
 ### Furusato Nouzei
 
@@ -82,11 +88,17 @@ from japandata.furusatonouzei.data import fndata
 
 -- Simplify the xarray / dataframe thingy.
 
--- Show some method to add up the past few years of data
-
 -- Rename column keys to be more sensible -->
 
 <!-- ### GENERAL TODO
 -- Look up census data? 
 
--- Easy romaji converter for place names? -->
+-- Easy romaji converter for place names? First need yomikata for every place name (probably can find a file somewhere with this. I know one of the nouzei files had something like this? and I think I saw a standalone one somewhere?), and then a converter from hiragana to romaji (probably this exists somewhere)
+
+-- Labour force survey: https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00450071&tstat=000001011791
+
+-- Gender balance info: Government https://www.gender.go.jp/policy/suishin_law/csv_dl/index.html Private: https://positive-ryouritsu.mhlw.go.jp/positivedb/
+
+-- weather: http://tenkiapi.jp/
+
+-->

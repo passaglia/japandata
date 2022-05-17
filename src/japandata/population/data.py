@@ -19,6 +19,10 @@ JAPAN_POP_CACHE = os.path.join(os.path.dirname(__file__),'japan_pop.parquet')
 PREF_POP_CACHE = os.path.join(os.path.dirname(__file__),'pref_pop.parquet')
 LOCAL_POP_CACHE = os.path.join(os.path.dirname(__file__),'local_pop.parquet')
 
+JAPAN_AGE_CACHE = os.path.join(os.path.dirname(__file__),'japan_age.parquet')
+PREF_AGE_CACHE = os.path.join(os.path.dirname(__file__),'pref_age.parquet')
+LOCAL_AGE_CACHE = os.path.join(os.path.dirname(__file__),'local_age.parquet')
+
 def checkfordata():
     return os.path.exists(DATA_FOLDER)
 
@@ -33,6 +37,92 @@ def getdata():
         rawfile = tarfile.open(fileobj=ftpstream, mode="r|gz")
         rawfile.extractall(os.path.dirname(__file__))
         return
+
+def load_age_data(year, datalevel='prefecture'):
+    assert (datalevel in ['prefecture', 'local'])
+    if datalevel=='prefecture':
+        assert(1994<=year<=2021)
+    elif datalevel=='local':
+        assert(1995<=year<=2021)
+
+    fileextension = '.xls'
+    skiprows = 2
+    if year >= 2021:
+        fileextension = '.xlsx'
+        skiprows=3
+
+    forced_coltypes = {'code6digit':str, 'prefecture':str}
+    cols = ['code6digit', 'prefecture']
+    if datalevel=='local': cols+=['city']
+    cols += ['gender', 'total-pop']
+    if year == 2005: cols+=['total-pop-corrected']
+    agebracketmin = 0
+    if year < 2015:
+        agebracketmax = 80
+    else:
+        agebracketmax = 100
+    while agebracketmin < agebracketmax:
+        cols += [(str(int(agebracketmin))+'-'+str(agebracketmin+4))]
+        agebracketmin+=5
+    cols+= ['>'+str(int(agebracketmax-1))]
+    
+
+    ## change the column order to make sure >99 is last
+    if datalevel=='prefecture':
+        filelabel=str(year)[-2:]+'02'
+        if year >= 2013:
+            filelabel += 's'
+        df = pd.read_excel(DATA_FOLDER+'tnen/'+filelabel+'tnen'+fileextension, skiprows=skiprows,header=None, names=cols, dtype=forced_coltypes)
+    elif datalevel=='local':
+        filelabel=str(year)[-2:]+'04'
+        if year >= 2013:
+            filelabel += 's'
+        df = pd.read_excel(DATA_FOLDER+'snen/'+filelabel+'snen'+fileextension, skiprows=skiprows,header=None,names=cols, dtype=forced_coltypes)
+
+    if year == 2021: df = df[:-2]
+
+    if datalevel=='local':
+        df['city'].replace('\x1f',np.nan,inplace=True)
+        df['city'].replace('-', np.nan,inplace=True)
+        df['city'] = df['city'].str.strip()
+        df['city'] = df['city'].str.replace('*','',regex=False)
+        df['city'].replace('', np.nan,inplace=True)
+
+    df['prefecture'] = df['prefecture'].str.strip()
+    df['prefecture'] = df['prefecture'].str.replace('*','',regex=False)
+
+    df.loc[df['prefecture']=='合計','code6digit']=np.nan
+
+    if datalevel=='local':
+        df.loc[df['city']=='島しょ','code6digit']='133604'
+        df.loc[df['city']=='色丹郡色丹村','code6digit']='016951'
+        df.loc[df['city']=='国後郡泊村','code6digit']='016969'
+        df.loc[df['city']=='国後郡留夜別村','code6digit']='016977'
+        df.loc[df['city']=='択捉郡留別村','code6digit']='016985'
+        df.loc[df['city']=='紗那郡紗那村','code6digit']='016993'
+        df.loc[df['city']=='蘂取郡蘂取村','code6digit']='017001'
+
+    if datalevel=='prefecture':
+        #df = df.set_index('prefecture')
+        df['code'] = df['code6digit'].apply(lambda s: s if pd.isna(s) else s[:2])
+        df.drop(['code6digit'], inplace=True, axis=1)
+    if datalevel=='local':
+        df['code'] = df['code6digit'].apply(lambda s: s if pd.isna(s) else s[:-1])
+        #df = df.set_index('code6digit')
+
+    ##### SELF-CONSISTENCY TESTS ###
+    # This tests whether men+women = total
+    grouped = df.drop(['code6digit','prefecture','city','gender','total-pop-corrected'],axis=1, errors='ignore').groupby('code')
+    def testfunc(group):
+        #print(group)
+        assert((group.iloc[0,:-1] == group.iloc[1,:-1]+group.iloc[2,:-1]).all())
+    grouped.apply(testfunc)
+    ##### SELF-CONSISTENCY TESTS ####
+
+    df['unknown'] = df['total-pop'] - df.drop(['code','code6digit','prefecture','total-pop-corrected','city','gender','total-pop'],axis=1,errors='ignore').sum(axis=1)
+
+    df['gender'].replace({'計':'total','男':'men','女':'women'}, inplace=True)
+    return df
 
 def load_pop_data(year, datalevel='prefecture'):
     assert (datalevel in ['prefecture', 'local'])
@@ -125,7 +215,7 @@ def load_pop_data(year, datalevel='prefecture'):
 
 def clean_pop_data():
     years = np.arange(1968, 2022)
-    df_japan_pop_list=[]
+    df_japan_pop_list= []
     df_pref_pop_list = []
     df_local_pop_list = []
     local_pop_years=[]
@@ -192,6 +282,69 @@ def clean_pop_data():
 
     return japan_pop_array, pref_pop_array, local_pop_array
 
+def clean_age_data():
+    years = np.arange(1994, 2022)
+    df_japan_age_list= []
+    df_pref_age_list = []
+    df_local_age_list = []
+    local_age_years=[]
+    for year in years:
+        print(year)
+        df_pref_age = load_age_data(year, datalevel='prefecture')
+        df_japan_age = df_pref_age[df_pref_age['prefecture'] == '合計'].copy().reset_index(drop=True).drop(['code','prefecture'],axis=1)
+        df_japan_age_list.append(df_japan_age)
+        df_pref_age = df_pref_age.set_index('prefecture').drop('合計').reset_index()
+        df_pref_age_list.append(df_pref_age)
+
+        if year >= 1995:
+            local_age_years.append(year)
+            df_local_age = load_age_data(year, datalevel='local')
+
+            ### checking consistency of the summary rows of the local table with the summary table
+            df_local_age_pref = (df_local_age.loc[pd.isna(df_local_age['city'])])
+            df_local_age_pref.reset_index(inplace=True,drop=True)
+            ### checking consistency of the japan table and the local table
+            assert((df_japan_age.drop(['gender','total-pop-corrected'],axis=1,errors='ignore').values==df_local_age_pref.drop(['prefecture', 'city','code','code6digit','gender','total-pop-corrected'], axis=1,errors='ignore').iloc[0:3].values).all())
+            ### checking consistency of the prefecture table and the local table
+            assert((df_pref_age.drop(['code','gender','total-pop-corrected','prefecture'],axis=1,errors='ignore').values==df_local_age_pref.drop(['prefecture', 'city','code','gender','total-pop-corrected','code6digit'],axis=1,errors='ignore').iloc[3:].values).all())
+ 
+            # dropping the summary rows
+            df_local_age = (df_local_age.loc[~pd.isna(df_local_age['city'])])
+            df_local_age_list.append(df_local_age)
+  
+    japan_columns = set()
+    for df_japan_age in df_japan_age_list:
+        japan_columns = japan_columns.union(df_japan_age)
+    for df_japan_age in df_japan_age_list:
+        for column in japan_columns:
+            if column not in df_japan_age.columns:
+                df_japan_age[column] = np.nan
+
+    pref_columns = set()
+    for df_pref_age in df_pref_age_list:
+        pref_columns=pref_columns.union(df_pref_age.columns)
+    for df_pref_age in df_pref_age_list:
+        for column in pref_columns:
+            if column not in df_pref_age.columns:
+                df_pref_age[column] = np.nan
+
+    local_columns = set()
+    for df_local_age in df_local_age_list:
+        local_columns=local_columns.union(df_local_age.columns)
+    for df_local_age in df_local_age_list:
+        for column in local_columns:
+            if column not in df_local_age.columns:
+                df_local_age[column] = np.nan
+
+    years -= 1 #The years above are actually the value at the end of the previous fiscal year. This line makes it the value at the end of the current fiscal year.
+    local_age_years = np.array(local_age_years) - 1 
+    japan_age_array = xr.concat([df_japan_age.to_xarray() for df_japan_age in df_japan_age_list], dim=xr.DataArray(years,dims='year'))
+    japan_age_array = japan_age_array.drop('index')
+    pref_age_array = xr.concat([df_pref_age.to_xarray() for df_pref_age in df_pref_age_list], dim=xr.DataArray(years,dims='year'))
+    local_age_array = xr.concat([df_local_age.to_xarray() for df_local_age in df_local_age_list], dim=xr.DataArray(local_age_years,dims='year'))
+
+    return japan_age_array, pref_age_array, local_age_array
+
 try:
     japan_pop_xr = pd.read_parquet(JAPAN_POP_CACHE).to_xarray()
     prefecture_pop_xr = pd.read_parquet(PREF_POP_CACHE).to_xarray()
@@ -210,6 +363,23 @@ prefecture_pop_df = prefecture_pop_df.drop(prefecture_pop_df.loc[pd.isna(prefect
 local_pop_df = local_pop_xr.to_dataframe().reset_index().fillna(value=np.nan)
 local_pop_df = local_pop_df.drop(local_pop_df.loc[pd.isna(local_pop_df['total-pop'])].index)
 
+try:
+    japan_age_xr = pd.read_parquet(JAPAN_AGE_CACHE).to_xarray()
+    prefecture_age_xr = pd.read_parquet(PREF_AGE_CACHE).to_xarray()
+    local_age_xr = pd.read_parquet(LOCAL_AGE_CACHE).to_xarray()
+except FileNotFoundError:
+    if not checkfordata():
+        getdata()
+    japan_age_xr, prefecture_age_xr, local_age_xr = clean_age_data()
+    (japan_age_xr.to_dataframe()).to_parquet(JAPAN_AGE_CACHE)
+    (prefecture_age_xr.to_dataframe()).to_parquet(PREF_AGE_CACHE)
+    (local_age_xr.to_dataframe()).to_parquet(LOCAL_AGE_CACHE)
+
+japan_age_df = japan_age_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
+prefecture_age_df = prefecture_age_xr.to_dataframe().reset_index().fillna(value=np.nan)
+prefecture_age_df = prefecture_age_df.drop(prefecture_age_df.loc[pd.isna(prefecture_age_df['total-pop'])].index)
+local_age_df = local_age_xr.to_dataframe().reset_index().fillna(value=np.nan)
+local_age_df = local_age_df.drop(local_age_df.loc[pd.isna(local_age_df['total-pop'])].index)
 
 ## rate in 2013 is blank
 # The gaijin file has like soukei but:
@@ -221,10 +391,6 @@ local_pop_df = local_pop_df.drop(local_pop_df.loc[pd.isna(local_pop_df['total-po
     # in other separated into in other (帰化等), in other (other), in other (total)
     # out other separated into out other (loss of citizenship), out other (other), out other (total)
     # here the rates are not empty
-
-#def load_municipal_data(year):
-    #sjin files start in 95 and track each municipality. dealing with the name changes and mergers etc will be complicated. probably best to use the codes?
-
 
 # 94: in addition to the jin table there is a nen table with age and gender breakdown in each prefecture:
 #2 rows of header
