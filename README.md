@@ -7,7 +7,8 @@
 
 * [`japandata.maps`](#maps): Geographic information about japan and its political subdivisions,
 * [`japandata.population`](#population): Detailed population statistics,
-* [`japandata.furusatonouzei`](#furusato-nouzei) : Data about the *furusato nouzei* tax transfer program.
+* [`japandata.furusatonouzei`](#furusato-nouzei) : Data about the *furusato nouzei* tax transfer program,
+* [`japandata.indices`](#indices) : Economic health indicators for each municipality and prefecture
 
 Jupyter notebooks in the `/examples` folder demonstrate how to use these datasets.
 
@@ -64,11 +65,13 @@ The data gradually becomes more detailed as time goes on, with early data contai
 
 -- Simplify the xarray / dataframe thingy. I think just use dataframe and can construct xarray when needed using multiindex. First check with japan then pref then local.
 
--- Include Gaikokujin data and Age data 
+-- Include Gaikokujin data 
+
+-- add docs for age data
 
 -- Should I fix the rate columns? I think so, but maybe have a flag to allow getting the direct table output 
 
--- Is there a way to compute fertility rate? Need to implement age data for that.
+-- Is there a way to compute fertility rate? 
 
 -- Working population: 15-64
 
@@ -88,7 +91,19 @@ from japandata.furusatonouzei.data import fndata
 
 -- Simplify the xarray / dataframe thingy.
 
--- Rename column keys to be more sensible -->
+-- Rename column keys to be more sensible 
+
+-- Fix documentation -->
+
+### Indices 
+
+`japandata.indices.data` 
+
+<!-- #### TODO:
+
+-- Rename column keys 
+
+-- Write documentation -->
 
 <!-- ### GENERAL TODO
 -- Look up census data? 
