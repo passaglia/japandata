@@ -122,14 +122,11 @@ Prior to 2008, the `debt-restriction-rate` (起債制限比率) was used to regu
 
 The `laspeyres` index here measures the salary of municipal government employees relative to national government employees, controlling for educational history and seniority. A figure greater than 100 indicates municipal employees are being paid more than national employees.
 
-
-
-
 <!-- #### TODO:
 
 -- Rename column keys 
 
--- Write documentation -->
+-->
 
 <!-- ### GENERAL TODO
 -- Look up census data? 
