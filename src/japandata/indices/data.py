@@ -53,7 +53,10 @@ def load_data(year, datalevel='prefecture'):
     cols += ['prefecture']
     if datalevel == 'prefecturemean': cols+= ['useless']
     if datalevel in ['local','designatedcity','capital']: cols+=['city']
-    cols += ['index1', 'index2', 'index3', 'index4']
+    if year <= 2007:
+        cols += ['regular-expense-rate', 'debt-service-rate', 'debt-restriction-rate', 'economic-strength-index']
+    else:
+        cols += ['economic-strength-index', 'regular-expense-rate', 'debt-service-rate', 'future-burden-rate']
     if not ((datalevel=='prefecturemean') and (year == 2007)):
         cols+= ['laspeyres']
     if (year == 2012 or year == 2013) and (datalevel!='prefecturemean'): cols += ['laspeyres-adjusted']
@@ -72,7 +75,7 @@ def load_data(year, datalevel='prefecture'):
     df.drop(df.loc[df['prefecture']=='道府県庁所在市平均'].index,inplace=True)
     df.drop(df.loc[df['prefecture']=='道府県庁所在市'].index,inplace=True)
     df.drop(df.loc[df['prefecture']=='政令指定都市'].index,inplace=True)
-    df.drop(df.loc[pd.isna(df['index1'])].index,inplace=True)
+    df.drop(df.loc[pd.isna(df['debt-service-rate'])].index,inplace=True)
     
     if datalevel == 'prefecturemean':
         df.drop('useless',axis=1,errors='ignore', inplace=True)
@@ -92,12 +95,11 @@ def load_data(year, datalevel='prefecture'):
     df.replace('-', np.nan,inplace=True)
     df.replace('－', np.nan,inplace=True)
 
-    df = df.astype({'index1':np.float64, 'index2':np.float64,  'index3':np.float64, 'index4':np.float64})
-    if 'laspeyres' in df.columns:
-        df = df.astype({'laspeyres':np.float64})
-    if 'laspeyres-adjusted' in df.columns:
-        df = df.astype({'laspeyres-adjusted':np.float64})
-        
+    float_cols = ['future-burden-rate', 'laspeyres','debt-restriction-rate','regular-expense-rate','debt-service-rate','economic-strength-index','laspeyres-adjusted']
+    for col in float_cols:
+        if col in df.columns:
+            df = df.astype({col:np.float64}) 
+
     return df
 
 def clean_data():
@@ -148,6 +150,18 @@ def clean_data():
         df_designatedcity_list.append(df_designatedcity)
         df_capital_list.append(df_capital)
 
+    def unify_columns(df_list):
+        cols = set()
+        for df in df_list:
+            cols=cols.union(df.columns)
+        for df in df_list:
+            for col in cols:
+                if col not in df.columns:
+                    df[col] = np.nan
+
+    for df_list in [df_pref_list,df_prefmean_list,df_local_list,df_designatedcity_list,df_capital_list]:
+        unify_columns(df_list)
+
     pref_array = xr.concat([df.to_xarray() for df in df_pref_list], dim=xr.DataArray(years,dims='year'))
     prefmean_array = xr.concat([df.to_xarray() for df in df_prefmean_list], dim=xr.DataArray(years,dims='year'))
     local_array = xr.concat([df.to_xarray() for df in df_local_list], dim=xr.DataArray(years,dims='year'))
@@ -180,27 +194,8 @@ except FileNotFoundError:
     (designatedcity_ind_xr.to_dataframe()).to_parquet(DESIGNATEDCITY_CACHE)
     (capital_ind_xr.to_dataframe()).to_parquet(CAPITAL_CACHE)
 
-pref_ind_df = pref_ind_xr.to_dataframe()
-# japan_pop_df = japan_pop_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
-# prefecture_pop_df = prefecture_pop_xr.to_dataframe().reset_index().fillna(value=np.nan)
-# prefecture_pop_df = prefecture_pop_df.drop(prefecture_pop_df.loc[pd.isna(prefecture_pop_df['total-pop'])].index)
-# local_pop_df = local_pop_xr.to_dataframe().reset_index().fillna(value=np.nan)
-# local_pop_df = local_pop_df.drop(local_pop_df.loc[pd.isna(local_pop_df['total-pop'])].index)
-
-# try:
-#     japan_age_xr = pd.read_parquet(JAPAN_AGE_CACHE).to_xarray()
-#     prefecture_age_xr = pd.read_parquet(PREF_AGE_CACHE).to_xarray()
-#     local_age_xr = pd.read_parquet(LOCAL_AGE_CACHE).to_xarray()
-# except FileNotFoundError:
-#     if not checkfordata():
-#         getdata()
-#     japan_age_xr, prefecture_age_xr, local_age_xr = clean_age_data()
-#     (japan_age_xr.to_dataframe()).to_parquet(JAPAN_AGE_CACHE)
-#     (prefecture_age_xr.to_dataframe()).to_parquet(PREF_AGE_CACHE)
-#     (local_age_xr.to_dataframe()).to_parquet(LOCAL_AGE_CACHE)
-
-# japan_age_df = japan_age_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
-# prefecture_age_df = prefecture_age_xr.to_dataframe().reset_index().fillna(value=np.nan)
-# prefecture_age_df = prefecture_age_df.drop(prefecture_age_df.loc[pd.isna(prefecture_age_df['total-pop'])].index)
-# local_age_df = local_age_xr.to_dataframe().reset_index().fillna(value=np.nan)
-# local_age_df = local_age_df.drop(local_age_df.loc[pd.isna(local_age_df['total-pop'])].index)
+pref_ind_df = pref_ind_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
+prefmean_ind_df = prefmean_ind_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
+local_ind_df = local_ind_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
+designatedcity_ind_df = designatedcity_ind_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
+capital_ind_df = capital_ind_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
