@@ -12,7 +12,7 @@
 
 Jupyter notebooks in the `/examples` folder demonstrate how to use these datasets.
 
-This package is provided under a MPL 2.0 license. Each dataset is subject to its own license as noted below. The datasets are hosted at the companion repository [**JapanData-sources**](https://github.com/passaglia/japandata-sources) and are fetched by a local **JapanData** installation when first needed.
+This package is provided under a MPL 2.0 license. Each dataset is subject to its own license as noted below. The datasets are hosted at the companion repository [**JapanData-sources**](https://github.com/passaglia/japandata-sources) and are fetched when first needed.
 
 ## Installation
 
@@ -98,7 +98,7 @@ from japandata.furusatonouzei.data import fndata
 
 ### Indices 
 
-`japandata.indices.data` contains indices of the economic health of each municipality and prefecture in Japan. These indices are produced by the government for various legal purposes, such as to determine financial transfers between municipalities or to restrict municipal debt issuances. The data is provided by the [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html/) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken). It covers FY2005 to FY2020.
+`japandata.indices.data` contains indices of the economic health of each municipality and prefecture in Japan. These indices are produced by the government for various purposes, such as to determine financial transfers between municipalities or to restrict municipal debt issuances. The data is provided by the [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html/) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken). It covers FY2005 to FY2020.
 
 ```
 from japandata.indices.data import local_ind_df,  designatedcity_ind_df, capital_ind_df, pref_ind_df, prefmean_ind_df

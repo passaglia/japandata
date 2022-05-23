@@ -197,5 +197,7 @@ except FileNotFoundError:
 pref_ind_df = pref_ind_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
 prefmean_ind_df = prefmean_ind_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
 local_ind_df = local_ind_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
+local_ind_df = local_ind_df.drop(local_ind_df.loc[pd.isna(local_ind_df['city'])].index)
+
 designatedcity_ind_df = designatedcity_ind_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
 capital_ind_df = capital_ind_xr.to_dataframe().reset_index().drop('index',axis=1).fillna(value=np.nan)
