@@ -5,10 +5,10 @@
 
 **JapanData** is a python package which provides access to datasets about Japan. It includes:
 
-* [`japandata.maps`](#maps): Geographic information about japan and its political subdivisions,
-* [`japandata.population`](#population): Detailed population statistics,
+* [`japandata.maps`](#maps): Geographic information,
+* [`japandata.population`](#population): Population statistics,
 * [`japandata.furusatonouzei`](#furusato-nouzei) : Data about the *furusato nouzei* tax transfer program,
-* [`japandata.indices`](#indices) : Economic health indicators for each municipality and prefecture
+* [`japandata.indices`](#indices) : Municipal economic health indicators.
 
 Jupyter notebooks in the `/examples` folder demonstrate how to use these datasets.
 
@@ -106,11 +106,11 @@ from japandata.indices.data import local_ind_df,  designatedcity_ind_df, capital
 
 `local_ind_df` is a dataframe containing the economic health indices for each local government of japan, with a separate row for each year and municipality. `designatedcity_ind_df` contains the indices for just the designated cities and `capital_ind_df` for just the prefectural capitals. `pref_ind_df` contains indices computed for each prefecture, while `prefmean_ind_df` contains the average of the indices for the local municipal indices within each prefecture.
 
-For a detailed explanation of each index, see the official data source above (in Japanese). Below is a rough summary. Note that, as noted below, some of the indices measure different things for the 23 special wards of Tokyo than for other localities.
+A detailed explanation of each index is available in Japanese from the official data source above. Here is a rough summary in English.
 
-The `economic-strength-index` (財政力指数) shows the economic strength of a local government. It is the ratio of the standardized tax receipts (基準財政収入額 -- tax receipts times 0.75) to the standardized economic burden (基準財政需要額 -- an estimated cost required to provide government services), averaged over the past three years. If the economic strength index is greater than 1, the local government has an economic surplus and will transfer funds (地方交付税) to local governments with an economic deficit, as indicated by an economic strength index less than one.
+The `economic-strength-index` (財政力指数) shows the economic strength of a local government. It is the ratio of the standardized tax receipts (基準財政収入額 -- tax receipts times 0.75) to the standardized economic burden (基準財政需要額 -- an estimated cost required to provide government services), averaged over the past three years. If the economic strength index is greater than 1, the local government has an economic surplus and will transfer funds (地方交付税) to local governments with an economic strength index less than one.
 
-For the 23 special wards of Tokyo, which all pay transfer taxes to the rest of Japan, the value in this column is instead a differently-computed figure which is used to determine internal financial transfers between the wards (特別区財政調整交付金).
+For the 23 special wards of Tokyo, which all pay transfer taxes to the rest of Japan, the value in this column is instead a different figure which is used to determine internal financial transfers between the wards (特別区財政調整交付金).
 
 The `regular-expense-rate` (経常収支比率) is an index which shows the economic flexibility of a local government. It is the ratio of general expenses (such as personnel expenses, welfare expenses, and debt repayments) to general, non-specified income (local tax income, income from tax transfered between municipalities, and debt issuances), expressed as percentage. The higher this percentage, the less financial wiggle room a municipality has.
 
@@ -121,12 +121,6 @@ Available from 2008 (H20) and onwards, the `future-burden-rate` (将来負担比
 Prior to 2008, the `debt-restriction-rate` (起債制限比率) was used to regulate municipal debt issuances. It is similar to the `debt-service-rate` but computed slightly differently.
 
 The `laspeyres` index here measures the salary of municipal government employees relative to national government employees, controlling for educational history and seniority. A figure greater than 100 indicates municipal employees are being paid more than national employees.
-
-<!-- #### TODO:
-
--- Rename column keys 
-
--->
 
 <!-- ### GENERAL TODO
 -- Look up census data? 
