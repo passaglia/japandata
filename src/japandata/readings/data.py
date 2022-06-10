@@ -47,6 +47,29 @@ def load_readings_R2file():
     prefecture_df['prefecture-reading'] = prefecture_df['prefecture-kana'].apply(lambda s: romkan.to_roma(jaconv.h2z(s).strip('ケン'))).str.replace('osakafu', 'osaka').str.replace('toukyouto', 'toukyou').str.replace('kyoutofu', 'kyouto')
 
     df = df.loc[~pd.isna(df['city'])].reset_index(drop=True)
+    df['prefecture-reading'] = df['prefecture-kana'].apply(lambda s: romkan.to_roma(jaconv.h2z(s).strip('ケン'))).str.replace('osakafu', 'osaka').str.replace('toukyouto', 'toukyou').str.replace('kyoutofu', 'kyouto')
+    df['city-reading'] = df['city-kana'].apply(lambda s: romkan.to_roma(jaconv.h2z(s)))
+
+    def stripper(row):
+        #print(row)
+        if row.city[-1] == '市':
+            return row['city-reading'].removesuffix('shi')
+        elif row.city[-1] == '町':
+            stripped = row['city-reading'].removesuffix('chou')
+            if stripped == row['city-reading']:
+                stripped = row['city-reading'].removesuffix('machi')
+            return stripped
+        elif row.city[-1] == '村':
+            stripped = row['city-reading'].removesuffix('son')
+            if stripped == row['city-reading']:
+                stripped = row['city-reading'].removesuffix('mura')
+            return stripped
+        else:
+            return row['city-reading']
+        # 町
+        # 村
+
+    df['city-reading'] = df.apply(stripper,axis=1)
 
     return df, prefecture_df
 
