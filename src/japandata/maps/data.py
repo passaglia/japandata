@@ -31,14 +31,21 @@ def load_map(date = 2022, level = 'local_dc', quality='coarse'):
     except ValueError:
         date = np.datetime64(str(date)+'-12-31')
     assert (date>= np.min(available_dates))
-    assert quality in ["coarse", "low", "medium", "high"]
+    assert quality in ["stylized", "coarse", "low", "medium", "high"]
     assert level in ['japan', 'prefecture', 'local', 'local_dc']
-    if level == 'japan' and quality != 'coarse':
-        print('japan only available at coarse level')
+    if level == 'japan' and quality not in ['stylized','coarse']:
+        print('japan only available at stylized or coarse level')
         return load_map(date,'japan','coarse')
+    if level == 'prefecture' and quality == 'stylized':
+        return join_localities(remove_islands(load_map(date,'local_dc', 'stylized')))
+    if level == 'japan' and quality == 'stylized':
+        return join_prefectures(load_map(date,'prefecture', 'stylized'))
 
-    needed_date = str(np.max(available_dates[np.where(date - available_dates >= np.timedelta64(0))]))
-    needed_file = needed_date.replace('-','')+"/" + level_filename_dict[level] + '.' + quality_suffix_dict[quality] + extension_dict[level]
+    if quality == 'stylized':
+        needed_file = level_filename_dict[level]+'.stylized.json'
+    else:
+        needed_date = str(np.max(available_dates[np.where(date - available_dates >= np.timedelta64(0))]))
+        needed_file = needed_date.replace('-','')+"/" + level_filename_dict[level] + '.' + quality_suffix_dict[quality] + extension_dict[level]
 
     url = BASE_URL+needed_file
 
@@ -64,7 +71,7 @@ def load_map(date = 2022, level = 'local_dc', quality='coarse'):
                 for i in range(len(pref_df)):
                     print(i)
                     polygonlist.append(make_valid(pref_df.geometry[i]))
-                map_df = gpd.GeoSeries(unary_union(polygonlist))
+                map_df =gpd.GeoDataFrame(geometry=[unary_union(polygonlist)], crs=pref_df.crs)
                 map_df.to_file(CACHE_FOLDER+needed_file, driver='GeoJSON')
             else:
                 return Exception("Map was not found")
@@ -86,6 +93,43 @@ def load_map(date = 2022, level = 'local_dc', quality='coarse'):
 
     return map_df
 
+def remove_islands(local_df):
+    island_codes_hokkaido = ['01518', '01519','01517', '01367', '01695', '01696', '01697', '01698','01699', '01700']
+    island_codes_wakkayama = ['30427']
+    island_codes_ooita = ['44322']
+    island_codes_yamaguchi = ['35305']
+    island_codes_tottori = ['32528','32525','32526','32527']
+    island_codes_tokyo = ['13421','13361','13362','13363','13364','13381','13382','13401','13402']
+
+    island_codes = island_codes_hokkaido+island_codes_wakkayama+island_codes_ooita+island_codes_yamaguchi+island_codes_tottori+island_codes_tokyo
+
+    return local_df.drop(local_df.loc[local_df['code'].isin(island_codes)].index).reset_index(drop=True)
+
+def join_localities(local_df):
+    from shapely.ops import unary_union
+    from shapely.validation import make_valid
+    local_df=local_df.drop(['city','bureau','county','code'],axis=1)
+    prefs = []
+    polygons = []
+    for prefecture in local_df['prefecture'].unique():
+        polygonlist = []
+        for geometry in local_df.loc[local_df['prefecture']==prefecture,'geometry']:
+            polygonlist.append(make_valid(geometry))
+        polygons.append(unary_union(polygonlist))
+        prefs.append(prefecture)
+    
+    pref_df = gpd.GeoDataFrame(prefs, columns=['prefecture'],geometry=polygons, crs=local_df.crs )
+    return pref_df
+
+def join_prefectures(pref_df):
+    from shapely.ops import unary_union
+    from shapely.validation import make_valid
+    polygonlist = []
+    for i in range(len(pref_df)):
+        polygonlist.append(make_valid(pref_df.geometry[i]))
+    japan_df = gpd.GeoDataFrame(geometry=[unary_union(polygonlist)], crs=pref_df.crs)
+    return japan_df
+
 def get_dates():
     return available_dates
 
@@ -101,3 +145,7 @@ def generate_cache(levels=['local_dc'],qualities=['coarse']):
                 print(date)
                 load_map(date, level, quality)
 
+local_df = remove_islands(load_map(date=2022, level='local_dc', quality='stylized'))
+pref_df = load_map(2022,'prefecture', 'stylized')
+# japan_df = load_map(2022,'japan', 'stylized')
+# japan_df2 = load_map(2022,'japan', 'coarse')
