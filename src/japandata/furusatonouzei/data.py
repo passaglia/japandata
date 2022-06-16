@@ -18,6 +18,7 @@ DONATIONS_ROUGH_FILE = os.path.join(DATA_FOLDER, 'donations-rough/total_gain.xls
 DONATIONS_FOLDER = os.path.join(DATA_FOLDER,'donations/')
 DEDUCTIONS_FOLDER = os.path.join(DATA_FOLDER,'deductions/')
 CACHED_FILE = os.path.join(os.path.dirname(__file__),'cleandata.parquet')
+ROUGH_CACHED_FILE = os.path.join(os.path.dirname(__file__),'roughdata.parquet')
 
 def checkfordata():
     return os.path.exists(DATA_FOLDER)
@@ -37,10 +38,12 @@ def getdata():
 def load_donations_rough():
 
     years = ['H'+str(i) for i in range(20,31)] + ['R1','R2']
+    western_years = list(range(2008, 2021))
+
     colnames = ['prefecture', 'city']
-    for year in years:
-        colnames.append(year+'-donations') #units of this column is thousands of yen (for now)
-        colnames.append(year+'-donations-count')
+    for year in western_years:
+        colnames.append(str(year)+'-donations') #units of this column is thousands of yen (for now)
+        colnames.append(str(year)+'-donations-count')
 
     df = pd.read_excel(DONATIONS_ROUGH_FILE, header=3,names=colnames)
 
@@ -55,10 +58,10 @@ def load_donations_rough():
             df.at[i,"prefecture"] = 'japan'
             df.at[i,"city"] = 'total'
         if pd.isna(df["city"][i]):
-            df.at[i,"city"] = 'unassigned'
+            df.at[i,"city"] = 'prefecture'
     
-    for year in years:
-        df[year+'-donations'] = df[year+'-donations'] * 1000 #units of this column is now yen
+    for year in western_years:
+        df[str(year)+'-donations'] = df[str(year)+'-donations'] * 1000 #units of this column is now yen
     
     prefecture_list = df["prefecture"].unique().tolist()
     prefecture_list.remove('japan')
@@ -87,7 +90,16 @@ def load_donations_rough():
     
     df.reset_index(drop=True, inplace=True)
 
-    return df
+    df_donations = df.drop([str(year) +'-donations-count' for year in western_years],axis=1)
+    df_donations.columns = df_donations.columns.str.replace('-donations', '')
+    df_donations =  pd.melt(df_donations, id_vars=['prefecture', 'city','prefecturecity'], value_vars=[str(year) for year in western_years],var_name='year', value_name='donations')
+
+    df_count = df.drop([str(year) +'-donations' for year in western_years],axis=1)
+    df_count.columns = df_count.columns.str.replace('-donations-count', '')
+    df_count =  pd.melt(df_count, id_vars=['prefecture', 'city','prefecturecity'], value_vars=[str(year) for year in western_years],var_name='year', value_name='donations-count')
+
+    df_melted = df_donations.merge(df_count)
+    return df, df_melted
 
 def load_donations_by_year(year, correct_errors=True):
 
@@ -117,7 +129,7 @@ def load_donations_by_year(year, correct_errors=True):
         ncols=127
 
     df = pd.read_excel(DONATIONS_FOLDER+year+'_gain.xlsx', skiprows=skiprows,header=None,usecols=columnindices, names=cols.keys(),dtype=forced_coltypes)
-    df.loc[(df.city==0) | pd.isna(df.city) | (df.city=='-'),"city"] = "unassigned"
+    df.loc[(df.city==0) | pd.isna(df.city) | (df.city=='-'),"city"] = "prefecture"
 
     if (year == 'H29') or (year == 'H28'):
         df.loc[(df.city=='篠山市'),'city'] = "丹波篠山市"
@@ -149,7 +161,7 @@ def load_donations_by_year(year, correct_errors=True):
             df.loc[df['prefecturecity']=='埼玉県上里町','donations'] =  df.loc[df['prefecturecity']=='埼玉県上里町','donations']*10 #1650000
             df.loc[df['prefecturecity']=='静岡県御殿場市','donations'] =  df.loc[df['prefecturecity']=='静岡県御殿場市','donations']*10 
             ## Minor typo 
-            df.loc[df['prefecturecity']=='山梨県unassigned','donations'] =  24151001
+            df.loc[df['prefecturecity']=='山梨県prefecture','donations'] =  24151001
             df.loc[df['prefecturecity']=='鹿児島県薩摩川内市','donations'] =  df.loc[df['prefecturecity']=='鹿児島県薩摩川内市','donations-from-outside']
         if year == 'H29':
             pass
@@ -297,7 +309,7 @@ def combine_loss_gain(df_loss, df_gain):
     loss_index = 0 
     for i in range(len(df_gain)):
 
-        if df_gain['city'][i]!='unassigned':
+        if df_gain['city'][i]!='prefecture':
             try:
                 loss_index = df_loss[df_loss['prefecturecity'] == df_gain['prefecturecity'][i]].index[0]
                 for column in new_columns:
@@ -311,10 +323,10 @@ def combine_loss_gain(df_loss, df_gain):
     
     return df
 
-def clean_data(correct_errors=True, output_filename=None):
+def clean_data(correct_errors=True):
     
     print('loading rough donations table')
-    df_rough = load_donations_rough()
+    df_rough, df_rough_melted = load_donations_rough()
 
     years = np.array([int(i) for i in [2016,2017,2018,2019,2020]])
     year_labels = ['H28','H29','H30','R1','R2']
@@ -329,24 +341,24 @@ def clean_data(correct_errors=True, output_filename=None):
         print('running consistency checks ', year)
         assert ((df_gain["prefecturecity"] == df_rough["prefecturecity"]).all())
         if not correct_errors:
-            assert (np.abs(df_gain["donations"] - df_rough[year+"-donations"]) < 1000).all()
+            assert (np.abs(df_gain["donations"] - df_rough[str(years[i])+"-donations"]) < 1000).all()
 
         print('merging loss and gain dfs')
         year_df = combine_loss_gain(df_loss, df_gain)
         year_df_list.append(year_df)
 
     full_data_array = xr.concat([year_df.to_xarray() for year_df in year_df_list], dim=xr.DataArray(years,dims='year'))
-    if output_filename is not None:
-        full_data_array_df = full_data_array.to_dataframe()
-        full_data_array_df.to_parquet(output_filename)
-    return full_data_array
+    return full_data_array, df_rough_melted
 
 try:
     furusato_arr = pd.read_parquet(CACHED_FILE).to_xarray()
+    furusato_rough_df = pd.read_parquet(ROUGH_CACHED_FILE)
 except FileNotFoundError:
     if not checkfordata():
         getdata()
-    furusato_arr = clean_data(output_filename=CACHED_FILE)
+    furusato_arr, furusato_rough_df = clean_data()
+    furusato_arr.to_dataframe().to_parquet(CACHED_FILE)
+    furusato_rough_df.to_parquet(ROUGH_CACHED_FILE)
 
 furusato_df = furusato_arr.to_dataframe().reset_index().fillna(value=np.nan)
 furusato_df = furusato_df.drop(furusato_df.loc[pd.isna(furusato_df['donations'])].index)

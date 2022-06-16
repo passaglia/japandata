@@ -80,7 +80,7 @@ The data gradually becomes more detailed as time goes on, with early data contai
 
 ### Furusato Nouzei
 
-`japandata.furusatonouzei.data` provides information about the ***Furusato Nouzei*** program. This *Hometown Tax Transfer* program is a Japanese government program in which taxpayers can divert part of the taxes which would fund their local government to instead go to a different local government. In exchange for doing so, the taxpayer receives various 'tokens of gratitude' with a value which can in principle be no more than 30% of the diverted tax amount.
+`japandata.furusatonouzei.data` provides information about the ***Furusato Nouzei***, or *Hometown Tax Transfer*, program. This is a part of the Japanese tax system in which taxpayers can divert part of the taxes which would fund their local government to instead go to a different local government. In exchange for doing so, the taxpayer receives various 'tokens of gratitude' with a value which can in principle be no more than 30% of the diverted tax amount.
 
 The data provided here is collected from the [Ministry of Internal Affairs](https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/czaisei_seido/furusato/archive/) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
 
@@ -98,7 +98,7 @@ from japandata.furusatonouzei.data import fndata
 
 ### Indices 
 
-`japandata.indices.data` contains indices of the economic health of each municipality and prefecture in Japan. These indices are produced by the government for various purposes, such as to determine financial transfers between municipalities or to restrict municipal debt issuances. The data is provided by the [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html/) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken). It covers FY2005 to FY2020.
+`japandata.indices.data` contains indices of the economic health of each municipality and prefecture in Japan. These indices are produced by the government for various purposes, such as to determine financial transfers between municipalities or to restrict municipal debt issuances. The data is provided by the [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken). It covers FY2005 to FY2020.
 
 ```
 from japandata.indices.data import local_ind_df,  designatedcity_ind_df, capital_ind_df, pref_ind_df, prefmean_ind_df
