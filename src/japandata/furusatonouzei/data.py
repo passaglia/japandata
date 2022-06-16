@@ -90,16 +90,7 @@ def load_donations_rough():
     
     df.reset_index(drop=True, inplace=True)
 
-    df_donations = df.drop([str(year) +'-donations-count' for year in western_years],axis=1)
-    df_donations.columns = df_donations.columns.str.replace('-donations', '')
-    df_donations =  pd.melt(df_donations, id_vars=['prefecture', 'city','prefecturecity'], value_vars=[str(year) for year in western_years],var_name='year', value_name='donations')
-
-    df_count = df.drop([str(year) +'-donations' for year in western_years],axis=1)
-    df_count.columns = df_count.columns.str.replace('-donations-count', '')
-    df_count =  pd.melt(df_count, id_vars=['prefecture', 'city','prefecturecity'], value_vars=[str(year) for year in western_years],var_name='year', value_name='donations-count')
-
-    df_melted = df_donations.merge(df_count)
-    return df, df_melted
+    return df
 
 def load_donations_by_year(year, correct_errors=True):
 
@@ -182,7 +173,8 @@ def load_donations_by_year(year, correct_errors=True):
     df['code'] = df['code6digit'].apply(lambda s: s if pd.isna(s) else s[:-1])
     df.drop(['code6digit'], inplace=True, axis=1)
 
-    assert( len(df.loc[(df["donations-from-outside"]-1 > df["donations"])]) == 0)
+    if correct_errors:
+        assert( len(df.loc[(df["donations-from-outside"]-1 > df["donations"])]) == 0)
     # problematic_rows = df.loc[df["donations-from-outside"]-1 > df["donations"]].index
     # print(df.loc[problematic_rows, ["prefecturecity", "donations", "donations-count", "donations-from-outside", "donations-from-outside-count"]])
     # print(df.loc[problematic_rows, "donations"]/ df.loc[problematic_rows, "donations-count"])
@@ -326,7 +318,7 @@ def combine_loss_gain(df_loss, df_gain):
 def clean_data(correct_errors=True):
     
     print('loading rough donations table')
-    df_rough, df_rough_melted = load_donations_rough()
+    df_rough = load_donations_rough()
 
     years = np.array([int(i) for i in [2016,2017,2018,2019,2020]])
     year_labels = ['H28','H29','H30','R1','R2']
@@ -335,7 +327,7 @@ def clean_data(correct_errors=True):
     year_df_list = []
     for i,year in enumerate(year_labels):
         print('loading gain ', year)
-        df_gain = load_donations_by_year(year)
+        df_gain = load_donations_by_year(year,correct_errors=correct_errors)
         print('loading loss ', corresponding_loss_labels[i])
         df_loss = load_deductions_by_year(corresponding_loss_labels[i])
         print('running consistency checks ', year)
@@ -346,8 +338,24 @@ def clean_data(correct_errors=True):
         print('merging loss and gain dfs')
         year_df = combine_loss_gain(df_loss, df_gain)
         year_df_list.append(year_df)
-
+    
     full_data_array = xr.concat([year_df.to_xarray() for year_df in year_df_list], dim=xr.DataArray(years,dims='year'))
+
+    ## Now we also massage the rough array into an easier to handle form
+    western_years = list(range(2008, 2021))
+    df_rough['code']=df_gain['code'] ## This assumes that the municipalities are listed in the same order in the two files
+
+    df_donations = df_rough.drop([str(year) +'-donations-count' for year in western_years],axis=1)
+    df_donations.columns = df_donations.columns.str.replace('-donations', '')
+    df_donations =  pd.melt(df_donations, id_vars=['prefecture', 'city','prefecturecity','code'], value_vars=[str(year) for year in western_years],var_name='year', value_name='donations')
+
+    df_count = df_rough.drop([str(year) +'-donations' for year in western_years],axis=1)
+    df_count.columns = df_count.columns.str.replace('-donations-count', '')
+    df_count =  pd.melt(df_count, id_vars=['prefecture', 'city','prefecturecity','code'], value_vars=[str(year) for year in western_years],var_name='year', value_name='donations-count')
+
+    df_rough_melted = df_donations.merge(df_count)
+    df_rough_melted['year'] = pd.to_numeric(df_rough_melted['year']).astype('int')
+
     return full_data_array, df_rough_melted
 
 try:
