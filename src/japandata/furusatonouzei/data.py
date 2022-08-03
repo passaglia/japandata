@@ -36,9 +36,14 @@ def getdata():
         return
 
 def load_donations_rough():
-
+    
+    DONATIONS_ROUGH_FILE = os.path.join(DATA_FOLDER, 'donations-rough/total_gain_backup.xlsx')
     years = ['H'+str(i) for i in range(20,31)] + ['R1','R2']
     western_years = list(range(2008, 2021))
+
+    DONATIONS_ROUGH_FILE = os.path.join(DATA_FOLDER, 'donations-rough/total_gain.xlsx')
+    years = ['H'+str(i) for i in range(20,31)] + ['R1','R2', 'R3']
+    western_years = list(range(2008, 2022))
 
     colnames = ['prefecture', 'city']
     for year in western_years:
@@ -72,17 +77,17 @@ def load_donations_rough():
         data = rows.iloc[1:-2,2:]
         computed_cities_subtotal = data.sum(axis=0) 
         written_cities_subtotal = rows.iloc[-2, 2:]
-        assert np.abs((computed_cities_subtotal-written_cities_subtotal).sum()) < 1
+        assert np.abs((computed_cities_subtotal-written_cities_subtotal).sum()) < 5000
         computed_subtotal = computed_cities_subtotal + rows.iloc[0,2:]
         written_subtotal = rows.iloc[-1, 2:]
-        assert np.abs((computed_subtotal-written_subtotal).sum()) < 1
+        assert np.abs((computed_subtotal-written_subtotal).sum()) < 5000
         if i == 0:
             total = computed_subtotal
         else:
             total += computed_subtotal
 
     written_total = df.loc[df['prefecture'] == 'japan'].iloc[0,2:]
-    assert (np.abs(written_total-total)<1000).all()
+    assert (np.abs(written_total-total)<5000).all()
 
     df = df.loc[(df['city'] != 'total') & (df['city'] != 'prefecture_all_total') & (df['city'] != 'prefecture_cities_total')]
 
@@ -98,6 +103,10 @@ def load_donations_by_year(year, correct_errors=True):
 
     forced_coltypes = {'code6digit':str, 'prefecture':str}
 
+    if year == 'R3':
+        columnindices = [0,1,2,3,4,5,6,9,10,11,12,17]
+        skiprows=12
+        ncols=97
     if year == 'R2':
         columnindices = [0,1,2,3,4,5,6,9,10,11,12,17]
         skiprows=13
@@ -125,8 +134,9 @@ def load_donations_by_year(year, correct_errors=True):
     if (year == 'H29') or (year == 'H28'):
         df.loc[(df.city=='篠山市'),'city'] = "丹波篠山市"
         df.loc[(df.city=='那珂川町') & (df.prefecture=='福岡県') ,'city'] = '那珂川市'
-    if (year == 'H28'):
-        df.loc[(df.prefecture=='鹿児島'),'prefecture'] = "鹿児島県"
+    
+    df.loc[(df.prefecture=='鹿児島'),'prefecture'] = "鹿児島県"
+    df.loc[(df.prefecture=='岡山'),'prefecture'] = '岡山県'
 
     df['prefecturecity']=df["prefecture"]+df["city"]
     df['donations-from-outside']=pd.to_numeric(df['donations-from-outside'], errors ='coerce').fillna(0).astype('int')
@@ -205,6 +215,11 @@ def load_deductions_by_year(year):
         'city-reported-people':np.int64, 'city-reported-donations':np.int64, 'city-reported-deductions':np.int64, 
         'pref-reported-people':np.int64, 'pref-reported-donations':np.int64, 'pref-reported-deductions':np.int64}
 
+    if year == 'R4':
+        columnindices = [0,1,53,54,55,56,57,58]
+        skiprows=18
+        sheetnumber=0
+        ncols=59
     if year == 'R3':
         columnindices = [0,1,53,54,55,56,57,58]
         skiprows=18
@@ -245,7 +260,8 @@ def load_deductions_by_year(year):
         if df["prefecture"][i] == '総計' or df["prefecture"][i] =='全国合計':
             df.at[i,"prefecture"] = 'japan'
             df.at[i,"city"] = 'total'
-    
+
+    df.loc[(df.prefecture=='岡山'),'prefecture'] = '岡山県'
     df.loc[(df.prefecture=='沖縄'),'prefecture'] = "沖縄県"
     df.loc[(df.prefecture=='青森'),'prefecture'] = "青森県"
     df.loc[(df.city=='篠山市'),'city'] = "丹波篠山市"
@@ -320,9 +336,9 @@ def clean_data(correct_errors=True):
     print('loading rough donations table')
     df_rough = load_donations_rough()
 
-    years = np.array([int(i) for i in [2016,2017,2018,2019,2020]])
-    year_labels = ['H28','H29','H30','R1','R2']
-    corresponding_loss_labels = ['H29','H30','R1','R2','R3']
+    years = np.array([int(i) for i in [2016,2017,2018,2019,2020,2021]])
+    year_labels = ['H28','H29','H30','R1','R2','R3']
+    corresponding_loss_labels = ['H29','H30','R1','R2','R3','R4']
 
     year_df_list = []
     for i,year in enumerate(year_labels):
@@ -342,7 +358,7 @@ def clean_data(correct_errors=True):
     full_data_array = xr.concat([year_df.to_xarray() for year_df in year_df_list], dim=xr.DataArray(years,dims='year'))
 
     ## Now we also massage the rough array into an easier to handle form
-    western_years = list(range(2008, 2021))
+    western_years = list(range(2008, 2022))
     df_rough['code']=df_gain['code'] ## This assumes that the municipalities are listed in the same order in the two files
 
     df_donations = df_rough.drop([str(year) +'-donations-count' for year in western_years],axis=1)

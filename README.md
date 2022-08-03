@@ -9,6 +9,7 @@
 * [`japandata.population`](#population): Population statistics,
 * [`japandata.furusatonouzei`](#furusato-nouzei) : Data about the *furusato nouzei* tax transfer program,
 * [`japandata.indices`](#indices) : Municipal economic health indicators.
+* [`japandata.readings`](#readings) : Kana and romaji readings of the names of japanese municipalities and prefectures
 
 Jupyter notebooks in the `/examples` folder demonstrate how to use these datasets.
 
@@ -122,10 +123,16 @@ Prior to 2008, the `debt-restriction-rate` (起債制限比率) was used to regu
 
 The `laspeyres` index here measures the salary of municipal government employees relative to national government employees, controlling for educational history and seniority. A figure greater than 100 indicates municipal employees are being paid more than national employees.
 
+### Readings
+
+```
+from japandata.readings.data import names_df, pref_names_df 
+```
+
+These dataframes contain kanji, kana, and romaji readings of the names of Japanese municipalities and prefectures.
+
 <!-- ### GENERAL TODO
 -- Add census data?  https://www.stat.go.jp/data/kokusei/2020/kekka.html
-
--- Easy romaji converter for place names? First need yomikata for every place name (probably can find a file somewhere with this. I know one of the nouzei files had something like this? and I think I saw a standalone one somewhere?), and then a converter from hiragana to romaji (probably this exists somewhere)
 
 -- Labour force survey: https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00450071&tstat=000001011791
 
