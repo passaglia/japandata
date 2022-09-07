@@ -95,7 +95,7 @@ def load_map(date = 2022, level = 'local_dc', quality='coarse'):
 
 def remove_islands(local_df):
     island_codes_hokkaido = ['01518', '01519','01517', '01367', '01695', '01696', '01697', '01698','01699', '01700']
-    island_codes_wakkayama = ['30427']
+    island_codes_wakkayama = [] #['30427']
     island_codes_ooita = ['44322']
     island_codes_yamaguchi = ['35305']
     island_codes_tottori = ['32528','32525','32526','32527']
@@ -149,3 +149,23 @@ local_df = remove_islands(load_map(date=2022, level='local_dc', quality='stylize
 pref_df = load_map(2022,'prefecture', 'stylized')
 # japan_df = load_map(2022,'japan', 'stylized')
 # japan_df2 = load_map(2022,'japan', 'coarse')
+
+## 
+## Mapshaper commands to get a nice filtered japan map     
+# -filter "!['01518', '01519','01517', '01367', '01695', '01696', '01697', '01698','01699', '01700','44322','35305','32528','32525','32526','32527','13421','13361','13362','13363','13364','13381','13382','13401','13402'].includes(N03_007)" 
+# -clean
+# -explode
+# -filter-islands min-area 600km2
+# -dissolve2
+# -clean
+# -clean
+# -explode
+# -filter-islands min-area 200km2
+# -dissolve2
+# -clean
+
+## Mapshaper commands to get a nice filtered local map     
+# -filter "!['01518', '01519','01517', '01367', '01695', '01696', '01697', '01698','01699', '01700','44322','35305','32528','32525','32526','32527','13421','13361','13362','13363','13364','13381','13382','13401','13402'].includes(N03_007)" 
+# -clean
+# -filter-islands min-area 600km2
+# -clean

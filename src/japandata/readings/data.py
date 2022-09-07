@@ -8,7 +8,6 @@ Author: Sam Passaglia
 
 import pandas as pd
 import numpy as np
-import xarray as xr
 import os
 import romkan
 import jaconv
@@ -48,7 +47,7 @@ def load_readings_R2file():
 
     df = df.loc[~pd.isna(df['city'])].reset_index(drop=True)
     df['prefecture-reading'] = df['prefecture-kana'].apply(lambda s: romkan.to_roma(jaconv.h2z(s).strip('ケン'))).str.replace('osakafu', 'osaka').str.replace('toukyouto', 'toukyou').str.replace('kyoutofu', 'kyouto')
-    df['city-reading'] = df['city-kana'].apply(lambda s: romkan.to_roma(jaconv.h2z(s)))
+    df['city-reading'] = df['city-kana'].apply(lambda s: romkan.to_roma(jaconv.h2z(s))).str.replace('du','zu')
 
     def stripper(row):
         #print(row)

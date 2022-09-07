@@ -12,16 +12,17 @@ import xarray as xr
 import os
 
 DATA_URL = "https://github.com/passaglia/japandata-sources/raw/main/furusatonouzei/furusatonouzeidata.tar.gz"
-DATA_FOLDER = os.path.join(os.path.dirname(__file__),'furusatonouzeidata/')
 
-DONATIONS_ROUGH_FILE = os.path.join(DATA_FOLDER, 'donations-rough/total_gain.xlsx')
-DONATIONS_FOLDER = os.path.join(DATA_FOLDER,'donations/')
-DEDUCTIONS_FOLDER = os.path.join(DATA_FOLDER,'deductions/')
+FN_DATA_FOLDER = os.path.join(os.path.dirname(__file__),'furusatonouzeidata/')
+DONATIONS_ROUGH_FILE = os.path.join(FN_DATA_FOLDER, 'donations-rough/total_gain.xlsx')
+DONATIONS_FOLDER = os.path.join(FN_DATA_FOLDER,'donations/')
+DEDUCTIONS_FOLDER = os.path.join(FN_DATA_FOLDER,'deductions/')
+
 CACHED_FILE = os.path.join(os.path.dirname(__file__),'cleandata.parquet')
 ROUGH_CACHED_FILE = os.path.join(os.path.dirname(__file__),'roughdata.parquet')
 
 def checkfordata():
-    return os.path.exists(DATA_FOLDER)
+    return os.path.exists(FN_DATA_FOLDER)
 
 def getdata():
     if checkfordata():
@@ -37,11 +38,11 @@ def getdata():
 
 def load_donations_rough():
     
-    DONATIONS_ROUGH_FILE = os.path.join(DATA_FOLDER, 'donations-rough/total_gain_backup.xlsx')
+    DONATIONS_ROUGH_FILE = os.path.join(FN_DATA_FOLDER, 'donations-rough/total_gain_backup.xlsx')
     years = ['H'+str(i) for i in range(20,31)] + ['R1','R2']
     western_years = list(range(2008, 2021))
 
-    DONATIONS_ROUGH_FILE = os.path.join(DATA_FOLDER, 'donations-rough/total_gain.xlsx')
+    DONATIONS_ROUGH_FILE = os.path.join(FN_DATA_FOLDER, 'donations-rough/total_gain.xlsx')
     years = ['H'+str(i) for i in range(20,31)] + ['R1','R2', 'R3']
     western_years = list(range(2008, 2022))
 
