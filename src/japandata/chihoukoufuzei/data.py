@@ -10,10 +10,15 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import os
+from scipy import stats
+import matplotlib.pyplot as plt 
+from japandata.readings.data import pref_names_df
 
 DATA_URL = "https://github.com/passaglia/japandata-sources/raw/main/chihoukoufuzei/chihoukoufuzeidata.tar.gz"
 
 CK_DATA_FOLDER = os.path.join(os.path.dirname(__file__),'chihoukoufuzeidata/')
+MUNI_FOLDER = os.path.join(CK_DATA_FOLDER,'muni/')
+PREF_FOLDER = os.path.join(CK_DATA_FOLDER,'pref/')
 
 # CACHED_FILE = os.path.join(os.path.dirname(__file__),'cleandata.parquet')
 # ROUGH_CACHED_FILE = os.path.join(os.path.dirname(__file__),'roughdata.parquet')
@@ -33,15 +38,13 @@ def getdata():
         rawfile.extractall(os.path.dirname(__file__))
         return
 
-def load_ckz_rough(year):
+def load_muni_ckz(year):
 
     cols = ['trash','prefecture','city', 'ckz', 'ckz-prev-year']
     fileextension = '.xlsx'
     skiprows = 6
-    #forced_coltypes = {'code6digit':str, 'prefecture':str}
-    df = pd.read_excel(CK_DATA_FOLDER+str(year)+fileextension, skiprows=skiprows, header=None, names=cols)
+    df = pd.read_excel(MUNI_FOLDER+str(year)+fileextension, skiprows=skiprows, header=None, names=cols)
     df = df.reset_index(drop=True)
-    #dtype=forced_coltypes)
     df = df.drop('trash', axis=1)
 
     currentPref = df.iloc[0,0]
@@ -55,27 +58,28 @@ def load_ckz_rough(year):
     df['year'] = year
     df['ckz'] = 1000*df['ckz']
     df['ckz-prev-year'] = 1000*df['ckz-prev-year']
-    
+    df.loc[(df.city=='篠山市'),'city'] = "丹波篠山市"
+
     df = df.drop(df.loc[pd.isna(df['city'])].index)
     assert(len(df)==1719)
 
     return df 
 
-def load_ckz_income(year):
+def load_muni_income(year):
 
     fileextension = '.xls'
     skiprows = 6
     #forced_coltypes = {'code6digit':str, 'prefecture':str}
     if year == 2022:
-        cols =  {'code':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'income':42}
+        cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'income':42}
     elif year in [2021,2020,2019]:
-        cols =  {'code':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'income':43}
+        cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'income':43}
     elif year in [2018,2017,2016,2015]:
-        cols =  {'code':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'income':38}
+        cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'income':38}
     else:
         Exception('year not in allowable')
        
-    df = pd.read_excel(CK_DATA_FOLDER+str(year)+'-income'+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
+    df = pd.read_excel(MUNI_FOLDER+str(year)+'-income'+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
     df = df.reset_index(drop=True)
     
     df['year'] = year
@@ -84,447 +88,453 @@ def load_ckz_income(year):
 
     df = df.drop(df.loc[pd.isna(df['prefecture'])].index)
     df = df.drop('type',axis=1)
-    
+    df['code'] = df['code-str'].apply(lambda s: s[1:6])
+    df = df.drop('code-str',axis=1)
+
     assert(len(df)==1719)
 
     return df 
 
-def load_ckz_demand(year):
+def load_muni_demand(year):
+    ## The final demand is the actual demand minus the allowable debt issuance. This is what then keeps the final demand minus final income similar to the total amount of money in the pot.
+
     fileextension = '.xlsx'
     skiprows = 5
     #forced_coltypes = {'code6digit':str, 'prefecture':str}
     if year == 2022:
-        cols =  {'code':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand':56}
+        cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4, 'demand-pre-debt':53,'special-debt':55, 'final-demand':56}
     elif year in [2021]:
-        cols =  {'code':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand':58}
+        cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand-pre-debt':55,'special-debt':57,'final-demand':58}
     elif year in [2020]:
-        cols =  {'code':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand':55}
-    elif year in [2019,2018,2017,2016]:
-        cols =  {'code':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand':54}
+        cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand-pre-debt':52,'special-debt':54,'final-demand':55}
+    elif year in [2019,2018]:
+        cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand-pre-debt':51,'special-debt':53,'final-demand':54}
+        fileextension = '.xls'
+    elif year in [2017,2016]:
+        cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand-pre-debt':52,'special-debt':54,'final-demand':55}
         fileextension = '.xls'
     elif year in [2015]:
-        cols =  {'code':1,'prefecture':2,'city':3,'type':4, 'deficit-or-surplus':5,'demand':56}
+        cols =  {'code-str':1,'prefecture':2,'city':3,'type':4, 'deficit-or-surplus':5,'demand-pre-debt':53,'special-debt':55,'final-demand':56}
         fileextension = '.xls'
     else:
         Exception('year not in allowable range')
     
-    df = pd.read_excel(CK_DATA_FOLDER+str(year)+'-demand'+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
+    df = pd.read_excel(MUNI_FOLDER+str(year)+'-demand'+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
     df = df.reset_index(drop=True)
     
     df['year'] = year
-    df['demand'] = 1000*df['demand']
-    df.loc[(df.city=='篠山市'),'city'] = "丹波篠山市"
 
+    df['final-demand'] = 1000*df['final-demand']
+    df['special-debt'] = 1000*df['special-debt']
+    df['demand-pre-debt'] = 1000*df['demand-pre-debt']
+    df.loc[(df.city=='篠山市'),'city'] = "丹波篠山市"
     df = df.drop(df.loc[pd.isna(df['prefecture'])].index)
     df = df.drop('type',axis=1)
+    df['code'] = df['code-str'].apply(lambda s: s[1:6])
+    df = df.drop('code-str',axis=1)
+
+    assert((np.abs(df['demand-pre-debt']-df['special-debt']-df['final-demand'])<1000).all())
+
     assert(len(df)==1719)
 
     return df 
 
+def load_pref_ckz(year):
 
-#def clean_data():
-years = np.arange(2015, 2023)
-df_rough = pd.DataFrame()
-for year in years:
-    df_rough_year = load_ckz_rough(year)
-    df_rough = pd.concat([df_rough,df_rough_year],ignore_index=True)
+    fileextension = '.xls'
+    skiprows = 5
+    #forced_coltypes = {'code6digit':str, 'prefecture':str}
+    J=9
+    if year in [2020,2019,2018,2017,2016,2015]:
+        cols =  {'code-prefecture':0, 'final-demand':3, 'income':6, 'ckz':9}
+    else:
+        Exception('year not in allowable')
+       
+    df = pd.read_excel(PREF_FOLDER+str(year)+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
+    df = df.reset_index(drop=True)
 
-for year in years[0:-1]:
-    ckz = df_rough.loc[df_rough['year'] == year,'ckz']
-    nextyearprevyearckz = df_rough.loc[df_rough['year'] == year+1,'ckz-prev-year']
-    assert(np.sum(ckz-nextyearprevyearckz) < 1)
+    df[['code','prefecture']] = df['code-prefecture'].str.extract('(?P<code>\d{1,})(?P<prefecture>.*)')
 
-df_rough = df_rough.drop('ckz-prev-year', axis=1)
-df_income = pd.DataFrame()
-df_demand = pd.DataFrame()
-for year in years:
-    df_income_year = load_ckz_income(year)
-    df_income = pd.concat([df_income, df_income_year], ignore_index=True)
-    df_demand_year = load_ckz_demand(year)
-    df_demand = pd.concat([df_demand, df_demand_year], ignore_index=True)
+    df['year'] = year
+    df['income'] = 1000*df['income']
+    df['ckz'] = 1000*df['ckz']
+    df['final-demand'] = 1000*df['final-demand']
 
-df = df_income.merge(df_demand, on=['year','code', 'prefecture', 'city','deficit-or-surplus'],validate='one_to_one')
+    df = df.drop(df.loc[pd.isna(df['prefecture'])].index)
+    df = df.drop('code-prefecture',axis=1)
+    df['prefecture'] = df['prefecture'].str.replace('\u3000','')
 
-## todo: merge df and dfrough. i don't believe there's any redundant info
-for year in years:
-    yeardf = df.loc[df['year']==year]
-    yeardf_rough = df_rough.loc[df_rough['year']==year]
-    np.max((yeardf['demand']-yeardf['income'])/yeardf['demand'])
-    np.min((yeardf['demand']-yeardf['income'])/yeardf['demand'])
+    assert(len(df)==47)
+    return df 
 
-    yeardf_rough['ckz'] -  (yeardf['demand']-yeardf['income']).values
-    adjustment_factor =  1-(yeardf_rough['ckz']+yeardf['income'])/(yeardf['demand'])
-    adjustment_factor =  -(yeardf_rough['ckz']-yeardf['demand'])/yeardf['income']-1
+def load_pref_income(year):
 
-## compare to https://www.pref.osaka.lg.jp/attach/2413/00331407/R2_koufuzei.pdf
-osaka2020df = df.loc[(df['year'] == 2020) & (df['city']=='大阪市')]
-osaka2020dfrough =  df_rough.loc[(df_rough['year'] == 2020) & (df_rough['city']=='大阪市')]
-assert(osaka2020df['demand'].values == 654898101*1000)
-assert(osaka2020df['income'].values == 621727850*1000)
-## do i have the sakugo column?
-sakai2020df = df.loc[(df['year'] == 2020) & (df['city']=='堺市')]
-sakai2020dfrough =  df_rough.loc[(df_rough['year'] == 2020) & (df_rough['city']=='堺市')]
-assert(sakai2020df['demand'].values == 169411859*1000)
-assert(sakai2020df['income'].values == 136809228*1000)
-## I'm missing the 2 sakugo columns!! important, at least to get all cities to agree on the adjustment factor. otherwise can just get the most common number as the adjustment factor (since this represents sakugo 0 0)
-## I think I need to call them for the sakugo info... Think about whether I really need it. It seems smallish? Estimate size of effect.
+    fileextension = '.xls'
+    skiprows = 6
+    #forced_coltypes = {'code6digit':str, 'prefecture':str}
+    if year == 2022:
+        cols =  {'code-prefecture':0, 'income':42}
+    elif year in [2021,2020]:
+        cols =  {'code-prefecture':0,'income':43}
+    elif year in [2019]:
+        cols =  {'code-prefecture':1,'income':46}
+    elif year in [2018]:
+        cols =  {'code-prefecture':1,'income':39}
+    elif year in [2017]:
+        cols =  {'code-prefecture':1,'income':40}
+    elif year in [2016,2015]:
+        cols =  {'code-prefecture':1,'income':41}
+    else:
+        Exception('year not in allowable')
+       
+    df = pd.read_excel(PREF_FOLDER+str(year)+'-income'+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
+    df = df.reset_index(drop=True)
 
-# df_all = df_income.merge(df.drop_duplicates(), on=['year','code', 'prefecture', 'city','deficit-or-surplus'], 
-#                    how='left', indicator=True)
+    df[['code','prefecture']] = df['code-prefecture'].str.extract('(?P<code>\d{1,})(?P<prefecture>.*)')
 
-# df_all[df_all['_merge'] == 'left_only']
+    df['year'] = year
+    df['income'] = 1000*df['income']
 
-# df_income.loc[(df_income['year']==2020) & (df_income['code']=='C282219110000')]
+    df = df.drop(df.loc[pd.isna(df['prefecture'])].index)
+    df = df.drop('code-prefecture',axis=1)
 
-# df_income.loc[(df_income['city']=='丹波篠山市')]
+    def apply_todoufuken(pref):
+        if pref in ['東京']:
+            return pref + '都'
+        elif pref in ['京都','大阪']:
+            return pref + '府'
+        elif pref in ['北海道']:
+            return pref 
+        else:
+            return pref+'県'
+    df['prefecture'] = df['prefecture'].str.strip().str.replace(' ','').apply(apply_todoufuken)
 
-# df_demand.loc[(df_demand['year']==2020) & (df_demand['code']=='C282219110000')]
+    # df = df.drop('type',axis=1)
+    # df['code'] = df['code-str'].apply(lambda s: s[1:6])
+    # df = df.drop('code-str',axis=1)
 
-# df_demand.loc[df_demand['city']=='篠山市']
-# df_income.loc[df_income['city']=='篠山市']
+    assert(len(df)==47)
+    return df 
 
-assert(len(df) == len(df_income))
+def load_pref_demand(year, revised=False):
+    ## The final demand is the actual demand minus the allowable debt issuance. This is what then keeps the final demand minus final income similar to the total amount of money in the pot.
 
-# df_income.loc[df_income['year'].(df['city'] & ~df_income['year'].isin(df['city'])]
-
-
-#     DONATIONS_ROUGH_FILE = os.path.join(FN_DATA_FOLDER, 'donations-rough/total_gain_backup.xlsx')
-#     years = ['H'+str(i) for i in range(20,31)] + ['R1','R2']
-#     western_years = list(range(2008, 2021))
-
-#     DONATIONS_ROUGH_FILE = os.path.join(FN_DATA_FOLDER, 'donations-rough/total_gain.xlsx')
-#     years = ['H'+str(i) for i in range(20,31)] + ['R1','R2', 'R3']
-#     western_years = list(range(2008, 2022))
-
-#     colnames = ['prefecture', 'city']
-#     for year in western_years:
-#         colnames.append(str(year)+'-donations') #units of this column is thousands of yen (for now)
-#         colnames.append(str(year)+'-donations-count')
-
-#     df = pd.read_excel(DONATIONS_ROUGH_FILE, header=3,names=colnames)
-
-#     for i in range(len(df["prefecture"])):
-#         if df["prefecture"][i] == '市町村合計':
-#             df.at[i,"prefecture"] = df["prefecture"][i-1]
-#             df.at[i,"city"] = 'prefecture_cities_total'
-#         elif df["prefecture"][i] == '合計':
-#             df.at[i,"prefecture"] = df["prefecture"][i-1]
-#             df.at[i,"city"] = 'prefecture_all_total'
-#         elif df["prefecture"][i] == '全国合計':
-#             df.at[i,"prefecture"] = 'japan'
-#             df.at[i,"city"] = 'total'
-#         if pd.isna(df["city"][i]):
-#             df.at[i,"city"] = 'prefecture'
+    fileextension = '.xlsx'
+    skiprows = 5
+    #forced_coltypes = {'code6digit':str, 'prefecture':str}
+    if year in [2022]:
+        cols =  {'code-prefecture':0, 'demand-pre-debt':45,'special-debt':47, 'final-demand':48}
+    if year in [2021]:
+        if revised:
+            cols =  {'code-prefecture':0, 'demand-pre-debt':47,'special-debt':49, 'final-demand':50}
+        else:
+            cols =  {'code-prefecture':0, 'demand-pre-debt':45,'special-debt':47, 'final-demand':48}
+    elif year in [2020]:
+        cols =  {'code-prefecture':0, 'demand-pre-debt':44,'special-debt':46, 'final-demand':47}
+    elif year in [2019,2018]:
+        cols =  {'code-prefecture':1, 'demand-pre-debt':44,'special-debt':46, 'final-demand':47}
+    elif year in [2017,2016,2015]:
+        cols =  {'code-prefecture':1, 'demand-pre-debt':45,'special-debt':47, 'final-demand':48}
+    else:
+        Exception('year not in allowable range')
     
-#     for year in western_years:
-#         df[str(year)+'-donations'] = df[str(year)+'-donations'] * 1000 #units of this column is now yen
+    df = pd.read_excel(PREF_FOLDER+str(year)+'-demand'+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
+    df = df.reset_index(drop=True)
     
-#     prefecture_list = df["prefecture"].unique().tolist()
-#     prefecture_list.remove('japan')
+    df['year'] = year
 
-#     for i in range(len(prefecture_list)):
-#         prefecture = prefecture_list[i]
-#         rows = df.loc[df['prefecture'] == prefecture]
-#         data = rows.iloc[1:-2,2:]
-#         computed_cities_subtotal = data.sum(axis=0) 
-#         written_cities_subtotal = rows.iloc[-2, 2:]
-#         assert np.abs((computed_cities_subtotal-written_cities_subtotal).sum()) < 5000
-#         computed_subtotal = computed_cities_subtotal + rows.iloc[0,2:]
-#         written_subtotal = rows.iloc[-1, 2:]
-#         assert np.abs((computed_subtotal-written_subtotal).sum()) < 5000
-#         if i == 0:
-#             total = computed_subtotal
-#         else:
-#             total += computed_subtotal
+    df['final-demand'] = 1000*df['final-demand']
+    df['special-debt'] = 1000*df['special-debt']
+    df['demand-pre-debt'] = 1000*df['demand-pre-debt']
 
-#     written_total = df.loc[df['prefecture'] == 'japan'].iloc[0,2:]
-#     assert (np.abs(written_total-total)<5000).all()
 
-#     df = df.loc[(df['city'] != 'total') & (df['city'] != 'prefecture_all_total') & (df['city'] != 'prefecture_cities_total')]
+    df[['code','prefecture']] = df['code-prefecture'].str.extract('(?P<code>\d{1,})(?P<prefecture>.*)')
+    df = df.drop(df.loc[pd.isna(df['prefecture'])].index)
+    df = df.drop('code-prefecture',axis=1)
 
-#     df['prefecturecity'] = df["prefecture"]+df["city"]
+    def apply_todoufuken(pref):
+        if pref in ['東京']:
+            return pref + '都'
+        elif pref in ['京都','大阪']:
+            return pref + '府'
+        elif pref in ['北海道']:
+            return pref 
+        else:
+            return pref+'県'
+    df['prefecture'] = df['prefecture'].str.strip().str.replace(' ','').apply(apply_todoufuken)
+    df = df.reset_index(drop=True)
+
+
+    assert((np.abs(df['demand-pre-debt']-df['special-debt']-df['final-demand'])<1000).all())
+
+    assert(len(df)==47)
+
+    return df 
+
+def load_pref_all():
+
+    known_adjustment_factors = {2020: 0.000510886}
+    estimated_adjustment_factors = {2020: 0.0005113}
+
+    years = np.arange(2015, 2023)
+    #years = [2020]
+    years = np.arange(2015, 2021)
+    df_income = pd.DataFrame()
+    df_demand = pd.DataFrame()
+    df_ckz = pd.DataFrame()
+    for year in years:
+        print(year)
+        df_income_year = load_pref_income(year)
+        df_income = pd.concat([df_income, df_income_year], ignore_index=True)
+        df_demand_year = load_pref_demand(year)
+        df_demand = pd.concat([df_demand, df_demand_year], ignore_index=True)
+        df_ckz_year = load_pref_ckz(year)
+        df_ckz = pd.concat([df_ckz, df_ckz_year], ignore_index=True)
+        assert((np.abs(1-df_ckz_year['income']/df_income_year['income'])<0.002).all())
+        assert((np.abs(1-df_ckz_year['final-demand']/(df_demand_year['final-demand']))<0.005).all())
+
+    df = df_income.merge(df_demand, on=['year','code', 'prefecture'],validate='one_to_one')
+    df = df.merge(df_ckz, on=['prefecture','year'], suffixes=['_ckzfile',''])
+
+    from japandata.indices.data import pref_ind_df 
+
+    pref_ind_df = pref_ind_df.loc[pref_ind_df['year']>(np.min(years)-4)]
+
+    for pref in pref_ind_df.prefecture.unique():
+        prefLoc = pref_ind_df.prefecture == pref
+        pref_ind_df.loc[prefLoc,'economic-strength-index-prev3yearavg'] = pref_ind_df.loc[prefLoc].sort_values(by='year')[['economic-strength-index','year']].rolling(on='year', window=3,closed='left').mean()['economic-strength-index']
+        latest_row = pref_ind_df.loc[(prefLoc) & (pref_ind_df.year == np.max(pref_ind_df.loc[prefLoc].year))].reset_index(drop=True)
+        extra_row = pd.DataFrame(np.nan, index=[0],columns= latest_row.columns)
+        extra_row['year'] = latest_row['year']+1
+        extra_row['prefecture'] = latest_row['prefecture']
+        extra_row['economic-strength-index-prev3yearavg'] = np.mean(pref_ind_df.loc[prefLoc].sort_values(by='year')['economic-strength-index'].values[-3:])
+
+        pref_ind_df = pd.concat([pref_ind_df,extra_row],ignore_index=True)
+
+    df =  df.merge(pref_ind_df,on=['prefecture','year'],validate='one_to_one')
     
-#     df.reset_index(drop=True, inplace=True)
+    debt_constants = []
+    for year in years:
+        print(year)
+        yeardf = df.loc[df['year']==year]
+        print('total shortfall pre debt', ((yeardf['demand-pre-debt']- yeardf['income']).loc[(yeardf['demand-pre-debt']- yeardf['income'])>0].sum())/10**(12), 'trillion yen')
+        print('total shortfall post debt', ((yeardf['final-demand']- yeardf['income']).loc[(yeardf['final-demand']- yeardf['income'])>0].sum())/10**(12), 'trillion yen')
+        print("total debt", yeardf['special-debt'].sum()/10**12, 'trillion yen')
+        if year in known_adjustment_factors.keys():
+            ckz = (yeardf['final-demand']*(1-known_adjustment_factors[year])- yeardf['income'])
+            ckz.iloc[np.where(ckz<0)[0]] = 0
+            print('LAT computed', ckz.sum()/10**12, 'trillion yen')
+        
+        print('no ckz places ', np.sum(yeardf['ckz'] <1))
+        print('no debt places ', np.sum(yeardf['special-debt'] == 0))
+        if year < 2022:
+            plt.close('all')
+            if year != 2021:
+                print('Special Debt / (demand-pre-debt - income) / (economic strength)')
+                plt.hist(yeardf['special-debt']/(yeardf['demand-pre-debt']-yeardf['income'])/yeardf['economic-strength-index'],bins=50,color='red')
+            print('Special Debt / (demand-pre-debt - income) / (economic strength average of previous 3 years)')
+            # Formula for debt: Deficit * 0.1664 * Zaiseiryoku past 3 year average * extra factor
+            plt.hist(yeardf['special-debt']/(yeardf['demand-pre-debt']-yeardf['income'])/yeardf['economic-strength-index-prev3yearavg'],bins=50, color='blue',zorder=-10)  
 
-#     return df
+            print('Special Debt / (demand-pre-debt) / (economic strength pre 3 years)')
+            plt.hist(yeardf['special-debt']/(yeardf['demand-pre-debt'])/yeardf['economic-strength-index-prev3yearavg'],bins=50, color='green',zorder=-10)  
+            plt.show()
+            # Find the constant 
+            scaling_factors = yeardf['special-debt']/(yeardf['demand-pre-debt']-yeardf['income'])/yeardf['economic-strength-index-prev3yearavg']
+            scaling_factors = scaling_factors.loc[~scaling_factors.isna()]
+            n, bins = np.histogram(scaling_factors,bins=50)
+            mode = (bins[np.argmax(n)+1]+bins[np.argmax(n)])/2
+            print('debt constant', mode)
+            debt_constants.append(mode)
 
-# def load_donations_by_year(year, correct_errors=True):
+        #print('LAT computed', yeardf['ckz'].sum()/10**12, 'trillion yen')
+        #print("total debt as a fraction of total ckz", yeardf['special-debt'].sum()/yeardf['ckz'].sum())
+    return df_withind
 
-#     cols = {'code6digit':str, 'prefecture':str, 'city':str, 'donations-count':np.int64, 'donations':np.int64, 'donations-from-outside-count':np.int64, 'donations-from-outside':np.int64, 'donations-disaster-count':np.int64, 'donations-disaster':np.int64, 'product-cost':np.int64, 'shipping-cost':np.int64, 'total-cost':np.int64}
+## TODO: output and cache the pandas dframes
+## TODO: write the tests
+## TODO: Still trying to understand how much of the bond deficit is matched by a central government subsidy. To do that look at 1) the zaimusho stats and compare to my figures 2) The soumushou charts and compare to my figures.
+# (6.0966*10**11 + 531845326000.0)/1142089285000.0
+    # assert(len(df) == len(df_withind))
+    # df.loc[~df['prefecture'].isin(df_withind['prefecture'])]
+    # df.loc[~df['year'].isin(df_withind['year'])]
 
-#     forced_coltypes = {'code6digit':str, 'prefecture':str}
+def pref_tests(df):
+    df 
 
-#     if year == 'R3':
-#         columnindices = [0,1,2,3,4,5,6,9,10,11,12,17]
-#         skiprows=12
-#         ncols=97
-#     if year == 'R2':
-#         columnindices = [0,1,2,3,4,5,6,9,10,11,12,17]
-#         skiprows=13
-#         ncols=96
-#     if year == 'R1':
-#         columnindices = [0,1,2,3,4,5,6,9,10,11,12,17]
-#         skiprows=16
-#         ncols=114
-#     if year == 'H30':
-#         columnindices = [0,1,2,3,4,5,6,9,10,11,12,17]
-#         skiprows=5
-#         ncols=114
-#     if year == 'H29':
-#         columnindices = [0,1,2,3,4,6,7,12,13,24,25,30]
-#         skiprows=5
-#         ncols=118
-#     if year == 'H28':
-#         columnindices = [0,1,2,3,4,6,7,12,13,24,25,30]
-#         skiprows=6
-#         ncols=127
+def load_muni_all():
 
-#     df = pd.read_excel(DONATIONS_FOLDER+year+'_gain.xlsx', skiprows=skiprows,header=None,usecols=columnindices, names=cols.keys(),dtype=forced_coltypes)
-#     df.loc[(df.city==0) | pd.isna(df.city) | (df.city=='-'),"city"] = "prefecture"
+    years = np.arange(2015, 2023)
+    #years = [2020]
+    df_ckz = pd.DataFrame()
+    df_income = pd.DataFrame()
+    df_demand = pd.DataFrame()
+    for year in years:
+        df_ckz_year = load_muni_ckz(year)
+        df_ckz = pd.concat([df_ckz,df_ckz_year],ignore_index=True)
+        df_income_year = load_muni_income(year)
+        df_income = pd.concat([df_income, df_income_year], ignore_index=True)
+        df_demand_year = load_muni_demand(year)
+        df_demand = pd.concat([df_demand, df_demand_year], ignore_index=True)
 
-#     if (year == 'H29') or (year == 'H28'):
-#         df.loc[(df.city=='篠山市'),'city'] = "丹波篠山市"
-#         df.loc[(df.city=='那珂川町') & (df.prefecture=='福岡県') ,'city'] = '那珂川市'
+    for year in years[0:-1]:
+        ckz = df_ckz.loc[df_ckz['year'] == year,'ckz']
+        nextyearprevyearckz = df_ckz.loc[df_ckz['year'] == year+1,'ckz-prev-year']
+        assert(np.sum(ckz-nextyearprevyearckz) < 1)
+    df_ckz = df_ckz.drop('ckz-prev-year', axis=1)
+
+    df = df_income.merge(df_demand, on=['year','code', 'prefecture', 'city','deficit-or-surplus'],validate='one_to_one')
+
+    df= df.merge(df_ckz, on=['prefecture', 'city','year'],validate='one_to_one')
+
+    ### Getting the economic-strength data, which is a key factor in the system
+    from japandata.indices.data import local_ind_df
+
+    local_ind_df = local_ind_df.loc[local_ind_df['year']>(np.min(years)-4)]
+
+    ## adding a new row for special wards of tokyo
+    for year in local_ind_df.year.unique():
+        relevant_cities = local_ind_df.loc[(local_ind_df['year']==year) & (local_ind_df['prefecture'] == '東京都') & (local_ind_df['city'].str.contains('区'))]
+        assert(len(relevant_cities)==23)
+        mean = relevant_cities.mean(numeric_only=True).drop(['year'])
+        new_row = pd.DataFrame(np.nan, index=[0],columns= local_ind_df.columns)
+        new_row['year'] = year
+        new_row['prefecture'] = '東京都'
+        new_row['city'] = '特別区'
+        new_row['code'] = '13100'
+        for index in mean.index:
+            new_row[index] = mean[index]
+        local_ind_df = pd.concat([local_ind_df,new_row],ignore_index=True)
+
+    ## Adding the trailing economic strength average
+    for code in local_ind_df.code.unique():
+        codeLoc = local_ind_df.code == code
+        local_ind_df.loc[codeLoc,'economic-strength-index-prev3yearavg'] = local_ind_df.loc[codeLoc].sort_values(by='year')[['economic-strength-index','year']].rolling(on='year', window=3,closed='left').mean()['economic-strength-index']
+        latest_row = local_ind_df.loc[(codeLoc) & (local_ind_df.year == np.max(local_ind_df.loc[codeLoc].year))].reset_index(drop=True)
+        extra_row = pd.DataFrame(np.nan, index=[0],columns= latest_row.columns)
+        extra_row['year'] = latest_row['year']+1
+        extra_row[['prefecture','code','city']] = latest_row[['prefecture','code','city']] 
+        extra_row['economic-strength-index-prev3yearavg'] = np.mean(local_ind_df.loc[codeLoc].sort_values(by='year')['economic-strength-index'].values[-3:])
+
+        local_ind_df = pd.concat([local_ind_df,extra_row],ignore_index=True)
+
+    ## Adding in new rows for years with chihoukoufuzei data but no indices data
+    empty_data_template = local_ind_df.loc[local_ind_df['year']==np.max(local_ind_df.year)].copy().assign(**{column:np.nan for column in empty_data_template.columns if column not in ['prefecture','code','city']})
+    for year in years:
+        if year not in local_ind_df.year.unique():
+            local_ind_df = pd.concat([local_ind_df,empty_data_template.assign(year=year)])
+
+    df_withind =  df.merge(local_ind_df,on=['prefecture','code','year'],validate='one_to_one')
+    assert(len(df_withind) == len(df))
+    df = df_withind
+
+    adjustment_factors_list = []
+    debt_constants = []
+    #years = [2020]
+    known_adjustment_factors = {'2020': 0.000510886}
+    for year in years:
+        print(year)
+        yeardf = df.loc[df['year']==year]
+        print('total shortfall pre debt', ((yeardf['demand-pre-debt']- yeardf['income']).loc[(yeardf['demand-pre-debt']- yeardf['income'])>0].sum())/10**(12), 'trillion yen')
+        print('total shortfall post debt', ((yeardf['final-demand']- yeardf['income']).loc[(yeardf['final-demand']- yeardf['income'])>0].sum())/10**(12), 'trillion yen')
+        print('total LAT', yeardf['ckz'].sum()/10**12, 'trillion yen')
+        print("total debt", yeardf['special-debt'].sum()/10**12, 'trillion yen')
+        print("total debt as a fraction of total ckz", yeardf['special-debt'].sum()/yeardf['ckz'].sum())
+
+        adjustment_factors =  np.round(1-(yeardf['ckz']+yeardf['income'])/yeardf['final-demand'],6)
+        m = stats.mode(adjustment_factors.iloc[np.where(adjustment_factors>0)])
+        adjustment_factors_list.append(m)
+        print("adjustment factor", m)
+
+        frac_compensated =  (yeardf['ckz']/(yeardf['final-demand']-yeardf['income'])).values
+        print("median compensation fraction after debt", np.median(frac_compensated[np.where(frac_compensated>0)]))
+        print("debt as fraction of pre-debt demand", (yeardf['special-debt']/yeardf['demand-pre-debt']).median())
+        print("debt as fraction of pre-debt need", (yeardf['special-debt'].sum()/(yeardf['demand-pre-debt']-yeardf['income']).sum()))
+        print("debt as fraction of debt + total amount", (yeardf['special-debt'].sum()/(yeardf['special-debt'].sum()+yeardf['ckz'].sum()))) ## This is the closest thing to the 0.1664 number for 2020
+
+        #yeardf = yeardf.merge(local_ind_df,on=['code','year'],validate='one_to_one')
+        #yeardf.loc[~yeardf['code'].isin(yeardf['code'])] ## should just be the 23 ku row in here
+        print('no ckz places ', np.sum(yeardf['ckz'] <1))
+        print('no debt places ', np.sum(yeardf['special-debt'] == 0))
+        if year < 2022:
+            if year != 2021:
+                print('Special Debt / (demand-pre-debt - income) / (economic strength)')
+                plt.hist(yeardf['special-debt']/(yeardf['demand-pre-debt']-yeardf['income'])/yeardf['economic-strength-index'],bins=200,color='red')
+            print('Special Debt / (demand-pre-debt - income) / (economic strength average of previous 3 years)')
+            # Formula for debt: Deficit * 0.1664 * Zaiseiryoku past 3 year average * extra factor
+            plt.hist(yeardf['special-debt']/(yeardf['demand-pre-debt']-yeardf['income'])/yeardf['economic-strength-index-prev3yearavg'],bins=200, color='blue',zorder=-10)  
+            plt.hist(yeardf['special-debt']/(yeardf['demand-pre-debt'])/yeardf['economic-strength-index-prev3yearavg'],bins=200, color='green',zorder=-10)  
+            plt.show()
+            # Find the constant 
+            scaling_factors = yeardf['special-debt']/(yeardf['demand-pre-debt']-yeardf['income'])/yeardf['economic-strength-index-prev3yearavg']
+            scaling_factors = scaling_factors.loc[~scaling_factors.isna()]
+            n, bins = np.histogram(scaling_factors,bins=200)
+            mode = (bins[np.argmax(n)+1]+bins[np.argmax(n)])/2
+            print('debt constant', mode)
+            debt_constants.append(mode)
+        plt.close('all')
+
+    plt.plot(df.groupby(by='year')['income'].sum()/df.groupby(by='year')['demand-pre-debt'].sum())
+    plt.show()
+    plt.close('all')
+    plt.plot((df.groupby(by='year')['special-debt'].sum())/df.groupby(by='year')['ckz'].sum())
+    plt.show()
+    plt.close('all')
     
-#     df.loc[(df.prefecture=='鹿児島'),'prefecture'] = "鹿児島県"
-#     df.loc[(df.prefecture=='岡山'),'prefecture'] = '岡山県'
+ 
+## Compare FN amount to some of these amounts.
+## Understand if the debt is really like just a 'gift' to municipalities? i.e. who buys it, how does it get payed back, how much debt do the municipalities actually take on?
 
-#     df['prefecturecity']=df["prefecture"]+df["city"]
-#     df['donations-from-outside']=pd.to_numeric(df['donations-from-outside'], errors ='coerce').fillna(0).astype('int')
-#     df['donations-from-outside-count']=pd.to_numeric(df['donations-from-outside-count'], errors ='coerce').fillna(0).astype('int')
-#     df['product-cost']=pd.to_numeric(df['product-cost'], errors ='coerce').fillna(0).astype('int')
-#     df['shipping-cost']=pd.to_numeric(df['shipping-cost'], errors ='coerce').fillna(0).astype('int')
-#     df['total-cost']=pd.to_numeric(df['total-cost'], errors ='coerce').fillna(0).astype('int')
-#     df['donations-disaster']=pd.to_numeric(df['donations-disaster'], errors ='coerce').fillna(0).astype('int')
-#     df['donations-disaster-count']=pd.to_numeric(df['donations-disaster-count'], errors ='coerce').fillna(0).astype('int')
+def municipal_tests():
+    ## compare to https://www.pref.osaka.lg.jp/attach/2413/00331407/R2_koufuzei.pdf
+    osaka2020df = df.loc[(df['year'] == 2020) & (df['city']=='大阪市')]
+    assert(osaka2020df['final-demand'].values == 654898101*1000)
+    assert(osaka2020df['income'].values == 621727850*1000)
+    assert(osaka2020df['ckz'].values == 32835673*1000)
+    adjustment_factor = 1-(osaka2020df['ckz']+osaka2020df['income'])/osaka2020df['final-demand']
+    assert(np.round(adjustment_factor.values[0],9)==0.000510886)
+    ## do i have the sakugo no column?
+    sakai2020df = df.loc[(df['year'] == 2020) & (df['city']=='堺市')]
+    assert(sakai2020df['final-demand'].values == 169411859*1000)
+    assert(sakai2020df['income'].values == 136809228*1000)
 
-#     df = df.astype(cols)
-
-#     if correct_errors:
-#         if (year == 'H28'):
-#             ## Fat finger errors here led to outrageously large donations-from-outside values
-#             df.loc[df['prefecturecity']=='北海道芽室町','donations-from-outside'] =  df.loc[df['prefecturecity']=='北海道芽室町','donations'] 
-#             df.loc[df['prefecturecity']=='山形県朝日町','donations-from-outside'] =  df.loc[df['prefecturecity']=='山形県朝日町','donations'] 
-#             df.loc[df['prefecturecity']=='東京都神津島村','donations-from-outside'] =  df.loc[df['prefecturecity']=='東京都神津島村','donations'] 
-#             df.loc[df['prefecturecity']=='山梨県北杜市','donations-from-outside'] = 13227000
-#             ## Here it looks like within and without got swapped
-#             df.loc[df['prefecturecity']=='栃木県那珂川町',['donations-count','donations', 'donations-from-outside-count', 'donations-from-outside']] = df.loc[df['prefecturecity']=='栃木県那珂川町',['donations-from-outside-count','donations-from-outside', 'donations-count', 'donations']].values
-#             ## Fat finger error leads to outrageously small gain value
-#             df.loc[df['prefecturecity']=='埼玉県上里町','donations'] =  df.loc[df['prefecturecity']=='埼玉県上里町','donations']*10 #1650000
-#             df.loc[df['prefecturecity']=='静岡県御殿場市','donations'] =  df.loc[df['prefecturecity']=='静岡県御殿場市','donations']*10 
-#             ## Minor typo 
-#             df.loc[df['prefecturecity']=='山梨県prefecture','donations'] =  24151001
-#             df.loc[df['prefecturecity']=='鹿児島県薩摩川内市','donations'] =  df.loc[df['prefecturecity']=='鹿児島県薩摩川内市','donations-from-outside']
-#         if year == 'H29':
-#             pass
-#         if year == 'H30':
-#             ## Fat finger errors here led to major error in donations-from-outside
-#             df.loc[df['prefecturecity']=='宮崎県諸塚村','donations-from-outside'] =  df.loc[df['prefecturecity']=='宮崎県諸塚村','donations'] 
-#             ## Fat finger errors here led to minor errors in donations-from-outside
-#             df.loc[df['prefecturecity']=='北海道羅臼町','donations-from-outside'] =  df.loc[df['prefecturecity']=='北海道羅臼町','donations'] 
-#             df.loc[df['prefecturecity']=='静岡県湖西市','donations-from-outside'] =  df.loc[df['prefecturecity']=='静岡県湖西市','donations'] 
-#             df.loc[df['prefecturecity']=='熊本県八代市','donations-from-outside'] =  df.loc[df['prefecturecity']=='熊本県八代市','donations'] 
-#             df.loc[df['prefecturecity']=='鹿児島県湧水町','donations-from-outside'] =  df.loc[df['prefecturecity']=='鹿児島県湧水町','donations'] 
-#         if year == 'R1':
-#             ## Minor issue 
-#             df.loc[df['prefecturecity']=='福井県美浜町','donations'] =  df.loc[df['prefecturecity']=='福井県美浜町','donations-from-outside'] #1650000
-
-#     df['net-gain'] = df['donations']-df['total-cost']
-
-#     df['code'] = df['code6digit'].apply(lambda s: s if pd.isna(s) else s[:-1])
-#     df.drop(['code6digit'], inplace=True, axis=1)
-
-#     if correct_errors:
-#         assert( len(df.loc[(df["donations-from-outside"]-1 > df["donations"])]) == 0)
-#     # problematic_rows = df.loc[df["donations-from-outside"]-1 > df["donations"]].index
-#     # print(df.loc[problematic_rows, ["prefecturecity", "donations", "donations-count", "donations-from-outside", "donations-from-outside-count"]])
-#     # print(df.loc[problematic_rows, "donations"]/ df.loc[problematic_rows, "donations-count"])
-    
-#     #print(df.loc[(df["donations-from-outside"] <  df["donations"]/6) & (df["donations-from-outside"]>0)])
-
-#     # print(df.loc[(df["donations"]/df["donations-count"]) > 10**6])
-#     # print(df.loc[(df["donations"]/df["total-cost"]) > 100])
-
-#     ## Flagging unfixable errors
-
-#     df['flag'] = False
-#     df.loc[(df["product-cost"] + df["shipping-cost"]) > df["donations"], 'flag'] = True
-#     #print(df.loc[(df["product-cost"] + df["shipping-cost"]) > df["donations"]])
+    ## I'm missing the 2 sakugo columns!! important, at least to get all cities to agree on the adjustment factor. otherwise can just get the most common number as the adjustment factor (since this represents sakugo 0 0)
+    ## I think I need to call them for the sakugo info... Think about whether I really need it. It seems smallish? Estimate size of effect.
+    ## How important is the adjustment factor by the way? If it were zero, how much over-budget would the program be.
 
 
-#     # print(df['donations-from-outside'].iloc[df.loc[(df["donations-from-outside"]-1 > df["donations"])].index]/df['donations-count'].iloc[df.loc[(df["donations-from-outside"]-1 > df["donations"])].index])
-#     # print(df['donations'].iloc[df.loc[(df["donations-from-outside"]-1 > df["donations"])].index]/df['donations-count'].iloc[df.loc[(df["donations-from-outside"]-1 > df["donations"])].index])
+    # yeardf.loc[yeardf['city_x'] == '大阪市','special-debt']
 
-#     # plt.plot(np.sort(df["donations"] / df["donations-count"]))
-#     # plt.yscale('log')
-#     # plt.show()
+    # yeardf.loc[yeardf['city_x'] == '神戸市','economic-strength-index-prev3yearavg']
+    # yeardf.loc[yeardf['city_x'] == '加西市','economic-strength-index-prev3yearavg']
 
-#     return df
+    # yeardf.loc[yeardf['city_x'] == '神戸市']['demand-pre-debt']-yeardf.loc[yeardf['city_x'] == '神戸市']['income']
 
-# def load_deductions_by_year(year):
-#     cols = {'prefecture':object, 'city':object, 
-#         'city-reported-people':np.int64, 'city-reported-donations':np.int64, 'city-reported-deductions':np.int64, 
-#         'pref-reported-people':np.int64, 'pref-reported-donations':np.int64, 'pref-reported-deductions':np.int64}
+    # yeardf.loc[yeardf['city_x'] == '神戸市']['ckz']+yeardf.loc[yeardf['city_x'] == '神戸市']['special-debt']
 
-#     if year == 'R4':
-#         columnindices = [0,1,53,54,55,56,57,58]
-#         skiprows=18
-#         sheetnumber=0
-#         ncols=59
-#     if year == 'R3':
-#         columnindices = [0,1,53,54,55,56,57,58]
-#         skiprows=18
-#         sheetnumber=0
-#         ncols=59
-#     if year == 'R2':
-#         columnindices = [0,1,53,54,55,56,57,58]
-#         skiprows=18
-#         sheetnumber=1
-#         ncols=59
-#     if year == 'R1':
-#         columnindices = [0,1,53,54,55,56,57,58]
-#         skiprows=18
-#         sheetnumber=0
-#         ncols=59
-#     if year == 'H30':
-#         columnindices = [0,1,52,53,54,55,56,57]
-#         skiprows=19
-#         sheetnumber=0
-#         ncols=58
-#     if year == 'H29':
-#         columnindices = [0,1,53,54,55,56,57,58]
-#         skiprows=17
-#         sheetnumber=0
-#         ncols=59
-#     if year == 'H28':
-#         columnindices = [0,1,53,54,55,56,57,58]
-#         skiprows=15
-#         sheetnumber=0
-#         ncols=59
+    # yeardf.loc[yeardf['city_x'] == '神戸市']['final-demand']+yeardf.loc[yeardf['city_x'] == '神戸市']['special-debt']
 
-#     df = pd.read_excel(DEDUCTIONS_FOLDER+year+'_loss.xlsx', skiprows=skiprows,sheet_name=sheetnumber,header=None,usecols=columnindices, names=cols.keys())
-
-#     for i in range(len(df["prefecture"])):
-#         if df["prefecture"][i][-2:] == '集計' or df["prefecture"][i] == '合計':
-#             df.at[i,"prefecture"] = df["prefecture"][i-1]
-#             df.at[i,"city"] = 'prefecture_cities_total'
-#         if df["prefecture"][i] == '総計' or df["prefecture"][i] =='全国合計':
-#             df.at[i,"prefecture"] = 'japan'
-#             df.at[i,"city"] = 'total'
-
-#     df.loc[(df.prefecture=='岡山'),'prefecture'] = '岡山県'
-#     df.loc[(df.prefecture=='沖縄'),'prefecture'] = "沖縄県"
-#     df.loc[(df.prefecture=='青森'),'prefecture'] = "青森県"
-#     df.loc[(df.city=='篠山市'),'city'] = "丹波篠山市"
-#     df.loc[(df.city=='那珂川町') & (df.prefecture=='福岡県') ,'city'] = '那珂川市'
-#     df.loc[(df.prefecture=='鹿児島'),'prefecture'] = "鹿児島県"
-#     df.loc[(df.city=='宝塚市'),'city'] = '宝塚市'
-#     df.loc[(df.city=='富谷町'),'city'] = '富谷市'
-    
-#     prefecture_list = df["prefecture"].unique().tolist()
-#     prefecture_list.remove('japan')
-
-#     for i in range(len(prefecture_list)):
-#         prefecture = prefecture_list[i]
-#         rows = df.loc[df['prefecture'] == prefecture]
-#         data = rows.iloc[0:-1,2:]
-#         computed_subtotal = data.sum(axis=0) 
-#         written_subtotal = rows.iloc[-1, 2:]
-#         assert np.abs((computed_subtotal-written_subtotal).sum()) < 1
-#         if i == 0:
-#             total = computed_subtotal
-#         else:
-#             total += computed_subtotal
-
-#     written_total = df.loc[df['prefecture'] == 'japan'].iloc[0,2:]
-#     assert (np.abs(written_total-total)<100).all()
-
-#     df = df.astype(cols)
-
-#     df['prefecturecity'] = df["prefecture"]+df["city"]
-#     df['reported-people'] = df[['city-reported-people','pref-reported-people']].max(axis=1)
-#     df['reported-donations'] = df[['city-reported-donations','pref-reported-donations']].max(axis=1)
-#     df['deductions'] = df['city-reported-deductions']+df['pref-reported-deductions']
-    
-#     df = df.loc[(df['city'] != 'total') & (df['city'] != 'prefecture_cities_total')]
-#     df.reset_index(drop=True, inplace=True)
-    
-#     df['prefecturecity'] = df["prefecture"]+df["city"]
-
-#     return df
-
-# def combine_loss_gain(df_loss, df_gain):
-    
-#     df = df_gain.copy()
-
-#     new_columns = []
-#     for column in df_loss.columns:
-#         if column not in df_gain.columns:
-#             new_columns.append(column)
-#             df[column] = np.nan
-
-#     df['netgainminusdeductions'] = np.nan
-
-#     loss_index = 0 
-#     for i in range(len(df_gain)):
-
-#         if df_gain['city'][i]!='prefecture':
-#             try:
-#                 loss_index = df_loss[df_loss['prefecturecity'] == df_gain['prefecturecity'][i]].index[0]
-#                 for column in new_columns:
-#                     df.loc[i, column] = df_loss[column][loss_index]
-#                     df.loc[i,'netgainminusdeductions']= df_gain['net-gain'][i]-df_loss['deductions'][loss_index]
-                
-#             except IndexError():
-#                 print("couldn't find city")
-
-#     df = df.set_index('prefecturecity')
-    
-#     return df
+    # local_ind_df.loc[(local_ind_df['city'] == '加西市'), ['year','economic-strength-index']].sort_values(by='year')
 
 
-# def clean_data(correct_errors=True):
-    
-#     print('loading rough donations table')
-#     df_rough = load_donations_rough()
+    # df_all = df_income.merge(df.drop_duplicates(), on=['year','code', 'prefecture', 'city','deficit-or-surplus'], 
+    #                    how='left', indicator=True)
 
-#     years = np.array([int(i) for i in [2016,2017,2018,2019,2020,2021]])
-#     year_labels = ['H28','H29','H30','R1','R2','R3']
-#     corresponding_loss_labels = ['H29','H30','R1','R2','R3','R4']
+    # df_all[df_all['_merge'] == 'left_only']
 
-#     year_df_list = []
-#     for i,year in enumerate(year_labels):
-#         print('loading gain ', year)
-#         df_gain = load_donations_by_year(year,correct_errors=correct_errors)
-#         print('loading loss ', corresponding_loss_labels[i])
-#         df_loss = load_deductions_by_year(corresponding_loss_labels[i])
-#         print('running consistency checks ', year)
-#         assert ((df_gain["prefecturecity"] == df_rough["prefecturecity"]).all())
-#         if not correct_errors:
-#             assert (np.abs(df_gain["donations"] - df_rough[str(years[i])+"-donations"]) < 1000).all()
+    # df_income.loc[(df_income['year']==2020) & (df_income['code']=='C282219110000')]
 
-#         print('merging loss and gain dfs')
-#         year_df = combine_loss_gain(df_loss, df_gain)
-#         year_df_list.append(year_df)
-    
-#     full_data_array = xr.concat([year_df.to_xarray() for year_df in year_df_list], dim=xr.DataArray(years,dims='year'))
+    # df_income.loc[(df_income['city']=='丹波篠山市')]
 
-#     ## Now we also massage the rough array into an easier to handle form
-#     western_years = list(range(2008, 2022))
-#     df_rough['code']=df_gain['code'] ## This assumes that the municipalities are listed in the same order in the two files
+    # df_demand.loc[(df_demand['year']==2020) & (df_demand['code']=='C282219110000')]
 
-#     df_donations = df_rough.drop([str(year) +'-donations-count' for year in western_years],axis=1)
-#     df_donations.columns = df_donations.columns.str.replace('-donations', '')
-#     df_donations =  pd.melt(df_donations, id_vars=['prefecture', 'city','prefecturecity','code'], value_vars=[str(year) for year in western_years],var_name='year', value_name='donations')
+    # df_demand.loc[df_demand['city']=='篠山市']
+    # df_income.loc[df_income['city']=='篠山市']
 
-#     df_count = df_rough.drop([str(year) +'-donations' for year in western_years],axis=1)
-#     df_count.columns = df_count.columns.str.replace('-donations-count', '')
-#     df_count =  pd.melt(df_count, id_vars=['prefecture', 'city','prefecturecity','code'], value_vars=[str(year) for year in western_years],var_name='year', value_name='donations-count')
+    # assert(len(df) == len(df_income))
 
-#     df_rough_melted = df_donations.merge(df_count)
-#     df_rough_melted['year'] = pd.to_numeric(df_rough_melted['year']).astype('int')
+    # df_income.loc[df_income['year'].(df['city'] & ~df_income['year'].isin(df['city'])]
 
-#     return full_data_array, df_rough_melted
 
 # try:
 #     furusato_arr = pd.read_parquet(CACHED_FILE).to_xarray()
@@ -538,10 +548,3 @@ assert(len(df) == len(df_income))
 
 # furusato_df = furusato_arr.to_dataframe().reset_index().fillna(value=np.nan)
 # furusato_df = furusato_df.drop(furusato_df.loc[pd.isna(furusato_df['donations'])].index)
-
-# furusato_pref_df = furusato_df.groupby(['prefecture','year']).sum().reset_index()
-# ## TODO: Drop or update the fields that don't just sum in the pref_df
-
-# furusato_sum_df = furusato_df.groupby(['code','prefecturecity','prefecture', 'city']).sum().reset_index().drop('year', axis=1)
-# furusato_pref_sum_df = furusato_pref_df.groupby(['prefecture']).sum().reset_index().drop('year', axis=1)
-# ## TODO: same here
