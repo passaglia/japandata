@@ -1,8 +1,11 @@
 # Data cache
 cache/
 furusatonouzeidata/
+chihoukoufuzeidata/
 populationdata/
+indicesdata/
 *.parquet
+*.tar.gz
 
 # Distribution / packaging
 dist/

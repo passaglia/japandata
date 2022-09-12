@@ -12,16 +12,18 @@ import xarray as xr
 import os
 from scipy import stats
 import matplotlib.pyplot as plt 
+import jaconv
 from japandata.readings.data import pref_names_df
 
+#jaconv.z2h(df['code'][0], digit=True) 
 DATA_URL = "https://github.com/passaglia/japandata-sources/raw/main/chihoukoufuzei/chihoukoufuzeidata.tar.gz"
 
 CK_DATA_FOLDER = os.path.join(os.path.dirname(__file__),'chihoukoufuzeidata/')
 MUNI_FOLDER = os.path.join(CK_DATA_FOLDER,'muni/')
 PREF_FOLDER = os.path.join(CK_DATA_FOLDER,'pref/')
 
-# CACHED_FILE = os.path.join(os.path.dirname(__file__),'cleandata.parquet')
-# ROUGH_CACHED_FILE = os.path.join(os.path.dirname(__file__),'roughdata.parquet')
+MUNI_CACHE_FILE = os.path.join(os.path.dirname(__file__),'muni.parquet')
+PREF_CACHE_FILE = os.path.join(os.path.dirname(__file__),'pref.parquet')
 
 def checkfordata():
     return os.path.exists(CK_DATA_FOLDER)
@@ -69,7 +71,6 @@ def load_muni_income(year):
 
     fileextension = '.xls'
     skiprows = 6
-    #forced_coltypes = {'code6digit':str, 'prefecture':str}
     if year == 2022:
         cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'income':42}
     elif year in [2021,2020,2019]:
@@ -148,7 +149,7 @@ def load_pref_ckz(year):
     if year in [2020,2019,2018,2017,2016,2015]:
         cols =  {'code-prefecture':0, 'final-demand':3, 'income':6, 'ckz':9}
     else:
-        Exception('year not in allowable')
+        cols =  {'code-prefecture':0, 'final-demand':3, 'income':6, 'ckz':9}
        
     df = pd.read_excel(PREF_FOLDER+str(year)+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
     df = df.reset_index(drop=True)
@@ -162,6 +163,7 @@ def load_pref_ckz(year):
 
     df = df.drop(df.loc[pd.isna(df['prefecture'])].index)
     df = df.drop('code-prefecture',axis=1)
+    df['code'] = df['code'].apply(lambda s: jaconv.z2h(s, digit=True) )
     df['prefecture'] = df['prefecture'].str.replace('\u3000','')
 
     assert(len(df)==47)
@@ -171,7 +173,6 @@ def load_pref_income(year):
 
     fileextension = '.xls'
     skiprows = 6
-    #forced_coltypes = {'code6digit':str, 'prefecture':str}
     if year == 2022:
         cols =  {'code-prefecture':0, 'income':42}
     elif year in [2021,2020]:
@@ -185,7 +186,7 @@ def load_pref_income(year):
     elif year in [2016,2015]:
         cols =  {'code-prefecture':1,'income':41}
     else:
-        Exception('year not in allowable')
+        Exception('year not in allowable range')
        
     df = pd.read_excel(PREF_FOLDER+str(year)+'-income'+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
     df = df.reset_index(drop=True)
@@ -198,6 +199,8 @@ def load_pref_income(year):
     df = df.drop(df.loc[pd.isna(df['prefecture'])].index)
     df = df.drop('code-prefecture',axis=1)
 
+    df['code'] = df['code'].apply(lambda s: jaconv.z2h(s, digit=True) )
+
     def apply_todoufuken(pref):
         if pref in ['東京']:
             return pref + '都'
@@ -208,10 +211,6 @@ def load_pref_income(year):
         else:
             return pref+'県'
     df['prefecture'] = df['prefecture'].str.strip().str.replace(' ','').apply(apply_todoufuken)
-
-    # df = df.drop('type',axis=1)
-    # df['code'] = df['code-str'].apply(lambda s: s[1:6])
-    # df = df.drop('code-str',axis=1)
 
     assert(len(df)==47)
     return df 
@@ -238,19 +237,21 @@ def load_pref_demand(year, revised=False):
     else:
         Exception('year not in allowable range')
     
+    if revised:
+        fileextension='-revised'+fileextension
+
     df = pd.read_excel(PREF_FOLDER+str(year)+'-demand'+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
     df = df.reset_index(drop=True)
     
+    
     df['year'] = year
-
     df['final-demand'] = 1000*df['final-demand']
     df['special-debt'] = 1000*df['special-debt']
     df['demand-pre-debt'] = 1000*df['demand-pre-debt']
-
-
     df[['code','prefecture']] = df['code-prefecture'].str.extract('(?P<code>\d{1,})(?P<prefecture>.*)')
     df = df.drop(df.loc[pd.isna(df['prefecture'])].index)
     df = df.drop('code-prefecture',axis=1)
+    df['code'] = df['code'].apply(lambda s: jaconv.z2h(s, digit=True) )
 
     def apply_todoufuken(pref):
         if pref in ['東京']:
@@ -266,7 +267,6 @@ def load_pref_demand(year, revised=False):
 
 
     assert((np.abs(df['demand-pre-debt']-df['special-debt']-df['final-demand'])<1000).all())
-
     assert(len(df)==47)
 
     return df 
@@ -277,8 +277,7 @@ def load_pref_all():
     estimated_adjustment_factors = {2020: 0.0005113}
 
     years = np.arange(2015, 2023)
-    #years = [2020]
-    years = np.arange(2015, 2021)
+    #years = np.arange(2015, 2021)
     df_income = pd.DataFrame()
     df_demand = pd.DataFrame()
     df_ckz = pd.DataFrame()
@@ -288,13 +287,18 @@ def load_pref_all():
         df_income = pd.concat([df_income, df_income_year], ignore_index=True)
         df_demand_year = load_pref_demand(year)
         df_demand = pd.concat([df_demand, df_demand_year], ignore_index=True)
-        df_ckz_year = load_pref_ckz(year)
+        ## The ckz data doesn't go as far as the income/demand de
+        try:
+            df_ckz_year = load_pref_ckz(year)
+            assert((np.abs(1-df_ckz_year['income']/df_income_year['income'])<0.002).all())
+            assert((np.abs(1-df_ckz_year['final-demand']/(df_demand_year['final-demand']))<0.005).all())
+        except FileNotFoundError:
+            df_ckz_year = df_ckz_year.assign(**{column:np.nan for column in df_ckz_year.columns if column not in ['prefecture','code']})
+            df_ckz_year['year'] = year
         df_ckz = pd.concat([df_ckz, df_ckz_year], ignore_index=True)
-        assert((np.abs(1-df_ckz_year['income']/df_income_year['income'])<0.002).all())
-        assert((np.abs(1-df_ckz_year['final-demand']/(df_demand_year['final-demand']))<0.005).all())
 
     df = df_income.merge(df_demand, on=['year','code', 'prefecture'],validate='one_to_one')
-    df = df.merge(df_ckz, on=['prefecture','year'], suffixes=['_ckzfile',''])
+    df = df.merge(df_ckz, on=['prefecture','year','code'], suffixes=['','_ckzfile'])
 
     from japandata.indices.data import pref_ind_df 
 
@@ -311,6 +315,12 @@ def load_pref_all():
 
         pref_ind_df = pd.concat([pref_ind_df,extra_row],ignore_index=True)
 
+    ## Adding in new rows for years with chihoukoufuzei data but no indices data
+    empty_data_template = pref_ind_df.loc[pref_ind_df['year']==np.max(pref_ind_df.year)].copy().assign(**{column:np.nan for column in pref_ind_df.columns if column not in ['prefecture','code']})
+    for year in years:
+        if year not in pref_ind_df.year.unique():
+            pref_ind_df = pd.concat([pref_ind_df,empty_data_template.assign(year=year)])
+
     df =  df.merge(pref_ind_df,on=['prefecture','year'],validate='one_to_one')
     
     debt_constants = []
@@ -325,8 +335,6 @@ def load_pref_all():
             ckz.iloc[np.where(ckz<0)[0]] = 0
             print('LAT computed', ckz.sum()/10**12, 'trillion yen')
         
-        print('no ckz places ', np.sum(yeardf['ckz'] <1))
-        print('no debt places ', np.sum(yeardf['special-debt'] == 0))
         if year < 2022:
             plt.close('all')
             if year != 2021:
@@ -338,7 +346,7 @@ def load_pref_all():
 
             print('Special Debt / (demand-pre-debt) / (economic strength pre 3 years)')
             plt.hist(yeardf['special-debt']/(yeardf['demand-pre-debt'])/yeardf['economic-strength-index-prev3yearavg'],bins=50, color='green',zorder=-10)  
-            plt.show()
+            #plt.show()
             # Find the constant 
             scaling_factors = yeardf['special-debt']/(yeardf['demand-pre-debt']-yeardf['income'])/yeardf['economic-strength-index-prev3yearavg']
             scaling_factors = scaling_factors.loc[~scaling_factors.isna()]
@@ -349,20 +357,19 @@ def load_pref_all():
 
         #print('LAT computed', yeardf['ckz'].sum()/10**12, 'trillion yen')
         #print("total debt as a fraction of total ckz", yeardf['special-debt'].sum()/yeardf['ckz'].sum())
-    return df_withind
+    return df
 
-## TODO: output and cache the pandas dframes
-## TODO: write the tests
-## TODO: Still trying to understand how much of the bond deficit is matched by a central government subsidy. To do that look at 1) the zaimusho stats and compare to my figures 2) The soumushou charts and compare to my figures.
-# (6.0966*10**11 + 531845326000.0)/1142089285000.0
+def pref_tests(df):
+    ## TODO: write the tests
+    pass
+    #df 
+    # (6.0966*10**11 + 531845326000.0)/1142089285000.0
     # assert(len(df) == len(df_withind))
     # df.loc[~df['prefecture'].isin(df_withind['prefecture'])]
     # df.loc[~df['year'].isin(df_withind['year'])]
 
-def pref_tests(df):
-    df 
-
 def load_muni_all():
+    ## TODO: write the tests
 
     years = np.arange(2015, 2023)
     #years = [2020]
@@ -419,7 +426,7 @@ def load_muni_all():
         local_ind_df = pd.concat([local_ind_df,extra_row],ignore_index=True)
 
     ## Adding in new rows for years with chihoukoufuzei data but no indices data
-    empty_data_template = local_ind_df.loc[local_ind_df['year']==np.max(local_ind_df.year)].copy().assign(**{column:np.nan for column in empty_data_template.columns if column not in ['prefecture','code','city']})
+    empty_data_template = local_ind_df.loc[local_ind_df['year']==np.max(local_ind_df.year)].copy().assign(**{column:np.nan for column in local_ind_df.columns if column not in ['prefecture','code','city']})
     for year in years:
         if year not in local_ind_df.year.unique():
             local_ind_df = pd.concat([local_ind_df,empty_data_template.assign(year=year)])
@@ -475,11 +482,13 @@ def load_muni_all():
         plt.close('all')
 
     plt.plot(df.groupby(by='year')['income'].sum()/df.groupby(by='year')['demand-pre-debt'].sum())
-    plt.show()
+    #plt.show()
     plt.close('all')
     plt.plot((df.groupby(by='year')['special-debt'].sum())/df.groupby(by='year')['ckz'].sum())
-    plt.show()
+    #plt.show()
     plt.close('all')
+    
+    return df
     
  
 ## Compare FN amount to some of these amounts.
@@ -498,53 +507,40 @@ def municipal_tests():
     assert(sakai2020df['final-demand'].values == 169411859*1000)
     assert(sakai2020df['income'].values == 136809228*1000)
 
-    ## I'm missing the 2 sakugo columns!! important, at least to get all cities to agree on the adjustment factor. otherwise can just get the most common number as the adjustment factor (since this represents sakugo 0 0)
-    ## I think I need to call them for the sakugo info... Think about whether I really need it. It seems smallish? Estimate size of effect.
-    ## How important is the adjustment factor by the way? If it were zero, how much over-budget would the program be.
-
+    ## I'm missing the 2 sakugo columns. probably this is why the cities don't all agree on the adjustment factor.
 
     # yeardf.loc[yeardf['city_x'] == '大阪市','special-debt']
-
     # yeardf.loc[yeardf['city_x'] == '神戸市','economic-strength-index-prev3yearavg']
     # yeardf.loc[yeardf['city_x'] == '加西市','economic-strength-index-prev3yearavg']
-
     # yeardf.loc[yeardf['city_x'] == '神戸市']['demand-pre-debt']-yeardf.loc[yeardf['city_x'] == '神戸市']['income']
-
     # yeardf.loc[yeardf['city_x'] == '神戸市']['ckz']+yeardf.loc[yeardf['city_x'] == '神戸市']['special-debt']
-
     # yeardf.loc[yeardf['city_x'] == '神戸市']['final-demand']+yeardf.loc[yeardf['city_x'] == '神戸市']['special-debt']
-
     # local_ind_df.loc[(local_ind_df['city'] == '加西市'), ['year','economic-strength-index']].sort_values(by='year')
-
-
     # df_all = df_income.merge(df.drop_duplicates(), on=['year','code', 'prefecture', 'city','deficit-or-surplus'], 
     #                    how='left', indicator=True)
-
     # df_all[df_all['_merge'] == 'left_only']
-
     # df_income.loc[(df_income['year']==2020) & (df_income['code']=='C282219110000')]
-
     # df_income.loc[(df_income['city']=='丹波篠山市')]
-
     # df_demand.loc[(df_demand['year']==2020) & (df_demand['code']=='C282219110000')]
-
     # df_demand.loc[df_demand['city']=='篠山市']
     # df_income.loc[df_income['city']=='篠山市']
-
     # assert(len(df) == len(df_income))
-
     # df_income.loc[df_income['year'].(df['city'] & ~df_income['year'].isin(df['city'])]
 
+try:
+    local_df = pd.read_parquet(MUNI_CACHE_FILE)
+    pref_df = pd.read_parquet(PREF_CACHE_FILE)
+except FileNotFoundError:
+    print('getting data')
+    if not checkfordata():
+        getdata()
+    print('loading muni data')
+    local_df = load_muni_all()
+    local_df.to_parquet(MUNI_CACHE_FILE)
+    print('loading pref data')
+    pref_df = load_pref_all()
+    pref_df.to_parquet(PREF_CACHE_FILE)
+    local_df = pd.read_parquet(MUNI_CACHE_FILE)
+    pref_df = pd.read_parquet(PREF_CACHE_FILE)
 
-# try:
-#     furusato_arr = pd.read_parquet(CACHED_FILE).to_xarray()
-#     furusato_rough_df = pd.read_parquet(ROUGH_CACHED_FILE)
-# except FileNotFoundError:
-#     if not checkfordata():
-#         getdata()
-#     furusato_arr, furusato_rough_df = clean_data()
-#     furusato_arr.to_dataframe().to_parquet(CACHED_FILE)
-#     furusato_rough_df.to_parquet(ROUGH_CACHED_FILE)
-
-# furusato_df = furusato_arr.to_dataframe().reset_index().fillna(value=np.nan)
-# furusato_df = furusato_df.drop(furusato_df.loc[pd.isna(furusato_df['donations'])].index)
+## TODO: move the charts to a different script?
