@@ -72,4 +72,6 @@ def load_readings_R2file():
 
     return df, prefecture_df
 
+if not checkfordata():
+    getdata()
 names_df, pref_names_df = load_readings_R2file()

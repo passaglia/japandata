@@ -40,11 +40,18 @@ def getdata():
         rawfile.extractall(os.path.dirname(__file__))
         return
 
-def load_muni_ckz(year):
-
-    cols = ['trash','prefecture','city', 'ckz', 'ckz-prev-year']
+def load_muni_ckz(year, revised=True):
+    
     fileextension = '.xlsx'
+    cols = ['trash','prefecture','city', 'ckz', 'ckz-prev-year']
     skiprows = 6
+
+    if year == 2021:
+        if revised:
+            fileextension='-revised'+fileextension
+            cols = ['trash','prefecture','city', 'ckz', 'ckz-pre-rev', 'ckz-prev-year']
+            skiprows = 7
+
     df = pd.read_excel(MUNI_FOLDER+str(year)+fileextension, skiprows=skiprows, header=None, names=cols)
     df = df.reset_index(drop=True)
     df = df.drop('trash', axis=1)
@@ -96,38 +103,65 @@ def load_muni_income(year):
 
     return df 
 
-def load_muni_demand(year):
+def load_muni_demand(year, revised=True):
     ## The final demand is the actual demand minus the allowable debt issuance. This is what then keeps the final demand minus final income similar to the total amount of money in the pot.
 
     fileextension = '.xlsx'
     skiprows = 5
+    skiprows2 = 6 
     #forced_coltypes = {'code6digit':str, 'prefecture':str}
     if year == 2022:
         cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4, 'demand-pre-debt':53,'special-debt':55, 'final-demand':56}
+        cols2 =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4, 'special-debt-rollover':excelToIndex('M'),'total-debt-rollover':excelToIndex('W')}
     elif year in [2021]:
-        cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand-pre-debt':55,'special-debt':57,'final-demand':58}
+        if revised:
+            ## Explanation of revision: https://www.soumu.go.jp/main_content/000784123.pdf https://www.soumu.go.jp/main_content/000784140.pdf
+            cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand-pre-debt':55,'special-debt':57,'final-demand':58}
+            fileextension='-revised'+fileextension
+        else:
+            cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand-pre-debt':53,'special-debt':55,'final-demand':56}
+        cols2 =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4, 'special-debt-rollover':excelToIndex('M'),'total-debt-rollover':excelToIndex('W')}
     elif year in [2020]:
         cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand-pre-debt':52,'special-debt':54,'final-demand':55}
-    elif year in [2019,2018]:
+        cols2 =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4, 'special-debt-rollover':excelToIndex('M'),'total-debt-rollover':excelToIndex('W')}
+    elif year in [2019]:
         cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand-pre-debt':51,'special-debt':53,'final-demand':54}
+        cols2 =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4, 'special-debt-rollover':excelToIndex('M'),'total-debt-rollover':excelToIndex('V')}
+        fileextension = '.xls'
+    elif year in [2018]:
+        cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand-pre-debt':51,'special-debt':53,'final-demand':54}
+        cols2 =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4, 'special-debt-rollover':excelToIndex('N'),'total-debt-rollover':excelToIndex('W')}
         fileextension = '.xls'
     elif year in [2017,2016]:
         cols =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4,'demand-pre-debt':52,'special-debt':54,'final-demand':55}
+        cols2 =  {'code-str':0,'prefecture':1,'city':2,'type':3, 'deficit-or-surplus':4, 'special-debt-rollover':excelToIndex('O'),'total-debt-rollover':excelToIndex('X')}
         fileextension = '.xls'
     elif year in [2015]:
         cols =  {'code-str':1,'prefecture':2,'city':3,'type':4, 'deficit-or-surplus':5,'demand-pre-debt':53,'special-debt':55,'final-demand':56}
+        cols2 =  {'code-str':1,'prefecture':2,'city':3,'type':4, 'deficit-or-surplus':5, 'special-debt-rollover':excelToIndex('P'),'total-debt-rollover':excelToIndex('Y')}
         fileextension = '.xls'
     else:
         Exception('year not in allowable range')
     
     df = pd.read_excel(MUNI_FOLDER+str(year)+'-demand'+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
+    df = df.drop(df.loc[pd.isna(df['code-str'])].index)
     df = df.reset_index(drop=True)
+
+    df2 = pd.read_excel(MUNI_FOLDER+str(year)+'-demand'+fileextension, skiprows=skiprows2, header=None,  usecols=cols2.values(), names=cols2.keys(), sheet_name=1)
+    df2 = df2.drop(df2.loc[pd.isna(df2['code-str'])].index)
+    df2 = df2.reset_index(drop=True)
+
+    df = df.merge(df2, on=['code-str', 'prefecture','city','type','deficit-or-surplus'],validate='one_to_one')
+    assert(len(df)==len(df2))
+
+
     
     df['year'] = year
-
     df['final-demand'] = 1000*df['final-demand']
     df['special-debt'] = 1000*df['special-debt']
     df['demand-pre-debt'] = 1000*df['demand-pre-debt']
+    df['special-debt-rollover'] = 1000*df['special-debt-rollover']
+    df['total-debt-rollover'] = 1000*df['total-debt-rollover']
     df.loc[(df.city=='篠山市'),'city'] = "丹波篠山市"
     df = df.drop(df.loc[pd.isna(df['prefecture'])].index)
     df = df.drop('type',axis=1)
@@ -215,39 +249,65 @@ def load_pref_income(year):
     assert(len(df)==47)
     return df 
 
-def load_pref_demand(year, revised=False):
+def excelToIndex(excelString):
+    LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    number = 0
+    power = 1
+    for i in list(range(len(excelString)))[::-1]:
+        number += (LETTERS.index(excelString[i])+1) * power
+        power *= 26
+    return number-1
+
+## Check all 2021 data to make sure I have 'revised' and 'original' versions
+def load_pref_demand(year, revised=True):
     ## The final demand is the actual demand minus the allowable debt issuance. This is what then keeps the final demand minus final income similar to the total amount of money in the pot.
 
     fileextension = '.xlsx'
     skiprows = 5
-    #forced_coltypes = {'code6digit':str, 'prefecture':str}
+    skiprows2 = 6
     if year in [2022]:
         cols =  {'code-prefecture':0, 'demand-pre-debt':45,'special-debt':47, 'final-demand':48}
+        cols2 = {'code-prefecture':0, 'special-debt-rollover':excelToIndex('H'), 'total-debt-rollover':excelToIndex('N')}
     if year in [2021]:
         if revised:
             cols =  {'code-prefecture':0, 'demand-pre-debt':47,'special-debt':49, 'final-demand':50}
+            fileextension='-revised'+fileextension
         else:
             cols =  {'code-prefecture':0, 'demand-pre-debt':45,'special-debt':47, 'final-demand':48}
+        cols2 = {'code-prefecture':0, 'special-debt-rollover':excelToIndex('H'), 'total-debt-rollover':excelToIndex('N')}
     elif year in [2020]:
-        cols =  {'code-prefecture':0, 'demand-pre-debt':44,'special-debt':46, 'final-demand':47}
-    elif year in [2019,2018]:
+        cols = {'code-prefecture':0, 'demand-pre-debt':44,'special-debt':46, 'final-demand':47}
+        cols2 = {'code-prefecture':0, 'special-debt-rollover':excelToIndex('H'), 'total-debt-rollover':excelToIndex('N')}
+    elif year in [2019]:
         cols =  {'code-prefecture':1, 'demand-pre-debt':44,'special-debt':46, 'final-demand':47}
+        cols2 = {'code-prefecture':0, 'special-debt-rollover':excelToIndex('H'), 'total-debt-rollover':excelToIndex('M')}
+    elif year in [2018]:
+        cols =  {'code-prefecture':1, 'demand-pre-debt':44,'special-debt':46, 'final-demand':47}
+        cols2 = {'code-prefecture':0, 'special-debt-rollover':excelToIndex('I'), 'total-debt-rollover':excelToIndex('N')}
     elif year in [2017,2016,2015]:
         cols =  {'code-prefecture':1, 'demand-pre-debt':45,'special-debt':47, 'final-demand':48}
+        cols2 = {'code-prefecture':0, 'special-debt-rollover':excelToIndex('J'), 'total-debt-rollover':excelToIndex('O')}
     else:
         Exception('year not in allowable range')
     
-    if revised:
-        fileextension='-revised'+fileextension
-
     df = pd.read_excel(PREF_FOLDER+str(year)+'-demand'+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
+    df = df.drop(df.loc[pd.isna(df['code-prefecture'])].index)
     df = df.reset_index(drop=True)
     
-    
+    df2 = pd.read_excel(PREF_FOLDER+str(year)+'-demand'+fileextension, skiprows=skiprows2, header=None,  usecols=cols2.values(), names=cols2.keys(), sheet_name=1)
+    df2 = df2.drop(df2.loc[pd.isna(df2['code-prefecture'])].index)
+    df2 = df2.reset_index(drop=True)
+
+    df = df.merge(df2, on=['code-prefecture'],validate='one_to_one')
+
+
     df['year'] = year
     df['final-demand'] = 1000*df['final-demand']
     df['special-debt'] = 1000*df['special-debt']
     df['demand-pre-debt'] = 1000*df['demand-pre-debt']
+    df['special-debt-rollover'] = 1000*df['special-debt-rollover']
+    df['total-debt-rollover'] = 1000*df['total-debt-rollover']
+
     df[['code','prefecture']] = df['code-prefecture'].str.extract('(?P<code>\d{1,})(?P<prefecture>.*)')
     df = df.drop(df.loc[pd.isna(df['prefecture'])].index)
     df = df.drop('code-prefecture',axis=1)
@@ -391,8 +451,9 @@ def load_muni_all():
     df_ckz = df_ckz.drop('ckz-prev-year', axis=1)
 
     df = df_income.merge(df_demand, on=['year','code', 'prefecture', 'city','deficit-or-surplus'],validate='one_to_one')
+    
 
-    df= df.merge(df_ckz, on=['prefecture', 'city','year'],validate='one_to_one')
+    df= df.merge(df_ckz, on=['prefecture', 'city','year'],validate='one_to_one', suffixes=['','_ckzfile'])
 
     ### Getting the economic-strength data, which is a key factor in the system
     from japandata.indices.data import local_ind_df
@@ -431,6 +492,7 @@ def load_muni_all():
         if year not in local_ind_df.year.unique():
             local_ind_df = pd.concat([local_ind_df,empty_data_template.assign(year=year)])
 
+    local_ind_df = local_ind_df.drop('city',axis=1)
     df_withind =  df.merge(local_ind_df,on=['prefecture','code','year'],validate='one_to_one')
     assert(len(df_withind) == len(df))
     df = df_withind
@@ -461,8 +523,6 @@ def load_muni_all():
 
         #yeardf = yeardf.merge(local_ind_df,on=['code','year'],validate='one_to_one')
         #yeardf.loc[~yeardf['code'].isin(yeardf['code'])] ## should just be the 23 ku row in here
-        print('no ckz places ', np.sum(yeardf['ckz'] <1))
-        print('no debt places ', np.sum(yeardf['special-debt'] == 0))
         if year < 2022:
             if year != 2021:
                 print('Special Debt / (demand-pre-debt - income) / (economic strength)')
