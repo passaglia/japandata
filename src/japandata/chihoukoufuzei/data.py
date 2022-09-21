@@ -458,6 +458,11 @@ def load_muni_all():
     ### Getting the economic-strength data, which is a key factor in the system
     from japandata.indices.data import local_ind_df
 
+    ## Clone 2020 data for 2021 
+    year_clone_df = local_ind_df.loc[local_ind_df['year'] == 2020].copy()
+    year_clone_df['year'] = 2021
+    local_ind_df = pd.concat([local_ind_df, year_clone_df])
+
     local_ind_df = local_ind_df.loc[local_ind_df['year']>(np.min(years)-4)]
 
     ## adding a new row for special wards of tokyo

@@ -41,9 +41,9 @@ def getdata():
 def load_age_data(year, datalevel='prefecture'):
     assert (datalevel in ['prefecture', 'local'])
     if datalevel=='prefecture':
-        assert(1994<=year<=2021)
+        assert(1994<=year<=2022)
     elif datalevel=='local':
-        assert(1995<=year<=2021)
+        assert(1995<=year<=2022)
 
     fileextension = '.xls'
     skiprows = 2
@@ -65,8 +65,7 @@ def load_age_data(year, datalevel='prefecture'):
         cols += [(str(int(agebracketmin))+'-'+str(agebracketmin+4))]
         agebracketmin+=5
     cols+= ['>'+str(int(agebracketmax-1))]
-    
-
+        
     ## change the column order to make sure >99 is last
     if datalevel=='prefecture':
         filelabel=str(year)[-2:]+'02'
@@ -79,7 +78,7 @@ def load_age_data(year, datalevel='prefecture'):
             filelabel += 's'
         df = pd.read_excel(DATA_FOLDER+'snen/'+filelabel+'snen'+fileextension, skiprows=skiprows,header=None,names=cols, dtype=forced_coltypes)
 
-    if year == 2021: df = df[:-2]
+    if year >= 2021: df = df[:-2]
 
     if datalevel=='local':
         df['city'].replace('\x1f',np.nan,inplace=True)
@@ -127,9 +126,9 @@ def load_age_data(year, datalevel='prefecture'):
 def load_pop_data(year, datalevel='prefecture'):
     assert (datalevel in ['prefecture', 'local'])
     if datalevel=='prefecture':
-        assert(1968<=year<=2021)
+        assert(1968<=year<=2022)
     elif datalevel=='local':
-        assert(1995<=year<=2021)
+        assert(1995<=year<=2022)
 
     fileextension = '.xls'
     skiprows = 4
@@ -148,9 +147,9 @@ def load_pop_data(year, datalevel='prefecture'):
     cols+=['households']
     if 1980 <= year:
         if year == 2005: cols+=['households-corrected']
-        if 2013 <= year <= 2021: cols+=['moved-in-domestic', 'moved-in-international']
+        if 2013 <= year: cols+=['moved-in-domestic', 'moved-in-international']
         cols+=['moved-in',  'born', 'other-in', 'total-in']
-        if 2013 <= year <= 2021: cols+=['moved-out-domestic', 'moved-out-international']
+        if 2013 <= year: cols+=['moved-out-domestic', 'moved-out-international']
         cols+=['moved-out',  'died', 'other-out', 'total-out',
         'in-minus-out']
         if 1994<=year:
@@ -168,7 +167,7 @@ def load_pop_data(year, datalevel='prefecture'):
             filelabel += 's'
         df = pd.read_excel(DATA_FOLDER+'sjin/'+filelabel+'sjin'+fileextension, skiprows=skiprows,header=None,names=cols, dtype=forced_coltypes)
 
-    if year == 2021: df = df[:-1]
+    if year >= 2021: df = df[:-1]
 
     if datalevel=='local':
         df['city'].replace('\x1f',np.nan,inplace=True)
@@ -214,7 +213,7 @@ def load_pop_data(year, datalevel='prefecture'):
     return df
 
 def clean_pop_data():
-    years = np.arange(1968, 2022)
+    years = np.arange(1968, 2023)
     df_japan_pop_list= []
     df_pref_pop_list = []
     df_local_pop_list = []
@@ -273,8 +272,9 @@ def clean_pop_data():
             if column not in df_local_pop.columns:
                 df_local_pop[column] = np.nan
 
-    years -= 1 #The years above are actually the value at the end of the previous fiscal year. This line makes it the value at the end of the current fiscal year.
+    years -= 1 #The years above are actually the value at the end of the previous fiscal year. This line makes it the value at the end of the current fiscal year. This means that the population flows within a given year are now assigned correctly.
     local_pop_years = np.array(local_pop_years) - 1 
+    
     japan_pop_array = xr.concat([df_japan_pop.to_xarray() for df_japan_pop in df_japan_pop_list], dim=xr.DataArray(years,dims='year'))
     japan_pop_array = japan_pop_array.drop('index')
     pref_pop_array = xr.concat([df_pref_pop.to_xarray() for df_pref_pop in df_pref_pop_list], dim=xr.DataArray(years,dims='year'))
@@ -283,7 +283,8 @@ def clean_pop_data():
     return japan_pop_array, pref_pop_array, local_pop_array
 
 def clean_age_data():
-    years = np.arange(1994, 2022)
+
+    years = np.arange(1994, 2023)
     df_japan_age_list= []
     df_pref_age_list = []
     df_local_age_list = []
@@ -380,6 +381,8 @@ prefecture_age_df = prefecture_age_xr.to_dataframe().reset_index().fillna(value=
 prefecture_age_df = prefecture_age_df.drop(prefecture_age_df.loc[pd.isna(prefecture_age_df['total-pop'])].index)
 local_age_df = local_age_xr.to_dataframe().reset_index().fillna(value=np.nan)
 local_age_df = local_age_df.drop(local_age_df.loc[pd.isna(local_age_df['total-pop'])].index)
+
+# Be careful -- local pop df contains duplicates (i.e. a municipality and its subcomponents)
 
 ## rate in 2013 is blank
 # The gaijin file has like soukei but:

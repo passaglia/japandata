@@ -145,8 +145,8 @@ def generate_cache(levels=['local_dc'],qualities=['coarse']):
                 print(date)
                 load_map(date, level, quality)
 
-local_df = remove_islands(load_map(date=2022, level='local_dc', quality='stylized'))
-pref_df = load_map(2022,'prefecture', 'stylized')
+# local_df = remove_islands(load_map(date=2022, level='local_dc', quality='stylized'))
+# pref_df = load_map(2022,'prefecture', 'stylized')
 # japan_df = load_map(2022,'japan', 'stylized')
 # japan_df2 = load_map(2022,'japan', 'coarse')
 

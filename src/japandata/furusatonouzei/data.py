@@ -213,8 +213,8 @@ def load_donations_by_year(year, correct_errors=True):
 
 def load_deductions_by_year(year):
     cols = {'prefecture':object, 'city':object, 
-        'city-reported-people':np.int64, 'city-reported-donations':np.int64, 'city-reported-deductions':np.int64, 
-        'pref-reported-people':np.int64, 'pref-reported-donations':np.int64, 'pref-reported-deductions':np.int64}
+        'city-reported-people':np.int64, 'city-reported-donations':np.int64, 'city-tax-deductions':np.int64, 
+        'pref-reported-people':np.int64, 'pref-reported-donations':np.int64, 'pref-tax-deductions':np.int64}
 
     if year == 'R4':
         columnindices = [0,1,53,54,55,56,57,58]
@@ -294,7 +294,8 @@ def load_deductions_by_year(year):
     df['prefecturecity'] = df["prefecture"]+df["city"]
     df['reported-people'] = df[['city-reported-people','pref-reported-people']].max(axis=1)
     df['reported-donations'] = df[['city-reported-donations','pref-reported-donations']].max(axis=1)
-    df['deductions'] = df['city-reported-deductions']+df['pref-reported-deductions']
+    df['deductions'] = df['city-tax-deductions']
+    #+df['pref-tax-deductions']
     
     df = df.loc[(df['city'] != 'total') & (df['city'] != 'prefecture_cities_total')]
     df.reset_index(drop=True, inplace=True)
@@ -385,12 +386,9 @@ except FileNotFoundError:
     furusato_arr.to_dataframe().to_parquet(CACHED_FILE)
     furusato_rough_df.to_parquet(ROUGH_CACHED_FILE)
 
+## Contains all the data
 furusato_df = furusato_arr.to_dataframe().reset_index().fillna(value=np.nan)
 furusato_df = furusato_df.drop(furusato_df.loc[pd.isna(furusato_df['donations'])].index)
 
-furusato_pref_df = furusato_df.groupby(['prefecture','year']).sum().reset_index()
-## TODO: Drop or update the fields that don't just sum in the pref_df
 
-furusato_sum_df = furusato_df.groupby(['code','prefecturecity','prefecture', 'city']).sum().reset_index().drop('year', axis=1)
-furusato_pref_sum_df = furusato_pref_df.groupby(['prefecture']).sum().reset_index().drop('year', axis=1)
-## TODO: same here
+## TODO: ADD THE pref-tax-deductions to the prefecture rows, and separate those into a different df.
