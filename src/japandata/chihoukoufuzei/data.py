@@ -387,6 +387,16 @@ def load_pref_all():
 
     from japandata.indices.data import pref_ind_df 
 
+    ## Clone 2020 data for 2021 TODO AUTOMATE THIS
+    year_clone_df = pref_ind_df.loc[pref_ind_df['year'] == 2020].copy()
+    year_clone_df['year'] = 2021
+    pref_ind_df = pd.concat([pref_ind_df, year_clone_df])
+    ## Clone 2020 data for 2022 TODO AUTOMATE THIS
+    year_clone_df = pref_ind_df.loc[pref_ind_df['year'] == 2020].copy()
+    year_clone_df['year'] = 2022
+    pref_ind_df = pd.concat([pref_ind_df, year_clone_df])
+
+
     pref_ind_df = pref_ind_df.loc[pref_ind_df['year']>(np.min(years)-4)]
 
     for pref in pref_ind_df.prefecture.unique():
@@ -440,8 +450,8 @@ def load_pref_all():
             print('debt constant', mode)
             debt_constants.append(mode)
 
-        #print('LAT computed', yeardf['ckz'].sum()/10**12, 'trillion yen')
-        #print("total debt as a fraction of total ckz", yeardf['special-debt'].sum()/yeardf['ckz'].sum())
+        print('LAT computed', yeardf['ckz'].sum()/10**12, 'trillion yen')
+        print("total debt as a fraction of total ckz", yeardf['special-debt'].sum()/yeardf['ckz'].sum())
     return df
 
 def pref_tests(df):
@@ -483,9 +493,13 @@ def load_muni_all():
     ### Getting the economic-strength data, which is a key factor in the system
     from japandata.indices.data import local_ind_df
 
-    ## Clone 2020 data for 2021 
+    ## Clone 2020 data for 2021 TODO AUTOMATE THIS
     year_clone_df = local_ind_df.loc[local_ind_df['year'] == 2020].copy()
     year_clone_df['year'] = 2021
+    local_ind_df = pd.concat([local_ind_df, year_clone_df])
+    ## Clone 2020 data for 2022 TODO AUTOMATE THIS
+    year_clone_df = local_ind_df.loc[local_ind_df['year'] == 2020].copy()
+    year_clone_df['year'] = 2022
     local_ind_df = pd.concat([local_ind_df, year_clone_df])
 
     local_ind_df = local_ind_df.loc[local_ind_df['year']>(np.min(years)-4)]
@@ -571,12 +585,12 @@ def load_muni_all():
             debt_constants.append(mode)
         plt.close('all')
 
-    plt.plot(df.groupby(by='year')['income'].sum()/df.groupby(by='year')['demand-pre-debt'].sum())
-    #plt.show()
-    plt.close('all')
-    plt.plot((df.groupby(by='year')['special-debt'].sum())/df.groupby(by='year')['ckz'].sum())
-    #plt.show()
-    plt.close('all')
+    # plt.plot(df.groupby(by='year')['income'].sum()/df.groupby(by='year')['demand-pre-debt'].sum())
+    # #plt.show()
+    # plt.close('all')
+    # plt.plot((df.groupby(by='year')['special-debt'].sum())/df.groupby(by='year')['ckz'].sum())
+    # #plt.show()
+    # plt.close('all')
     
     return df
     
@@ -634,4 +648,4 @@ except FileNotFoundError:
     pref_df = pd.read_parquet(PREF_CACHE_FILE)
 
 ## TODO: move the charts to a different script?
-## TODO: make the charts for prefs
+## TODO: if I'm going to keep the economic strength data in these dfs, I should at least get rid of the other stuff being brought over from the indices dfs
