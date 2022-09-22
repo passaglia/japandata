@@ -182,7 +182,7 @@ def load_pref_ckz(year, revised=True):
         elif year == 2021:
             cols = ['prefecture','ckz-revised','ckz','diff']
         df = pd.read_csv(PREF_FOLDER+str(year)+fileextension, header=None, names=cols)
-        df['code'] = df.index+1
+        df['code'] = (df.index+1).astype(str)
 
         if year == 2021:
             if revised:
@@ -191,8 +191,8 @@ def load_pref_ckz(year, revised=True):
             else:
                 df = df.drop(['ckz-revised','diff'],axis=1)
         
-        assert(np.abs(df.loc[df['code']==48,'ckz']-df.loc[df['code']!=48,'ckz'].sum()).values[0]<2)
-        df = df.drop(df.loc[df['code']==48].index)
+        assert(np.abs(df.loc[df['code']=='48','ckz']-df.loc[df['code']!='48','ckz'].sum()).values[0]<2)
+        df = df.drop(df.loc[df['code']=='48'].index)
 
         df = df.replace({'大阪':'大阪府'})
         df = df.replace({'京都':'京都府'})
@@ -212,7 +212,6 @@ def load_pref_ckz(year, revised=True):
 
         df[['code','prefecture']] = df['code-prefecture'].str.extract('(?P<code>\d{1,})(?P<prefecture>.*)')
 
-        df['year'] = year
         df['income'] = 1000*df['income']
         df['ckz'] = 1000*df['ckz']
         df['final-demand'] = 1000*df['final-demand']
@@ -222,6 +221,7 @@ def load_pref_ckz(year, revised=True):
         df['code'] = df['code'].apply(lambda s: jaconv.z2h(s, digit=True) )
         df['prefecture'] = df['prefecture'].str.replace('\u3000','')
 
+    df['year'] = year
     assert(len(df)==47)
     assert((df['prefecture'] == pref_names_df['prefecture']).all())
     return df 
@@ -370,12 +370,12 @@ def load_pref_all():
         df_income = pd.concat([df_income, df_income_year], ignore_index=True)
         df_demand_year = load_pref_demand(year)
         df_demand = pd.concat([df_demand, df_demand_year], ignore_index=True)
-        ## The ckz data doesn't go as far as the income/demand de
         try:
             df_ckz_year = load_pref_ckz(year)
             if not (year in [2021,2022]):
                 assert((np.abs(1-df_ckz_year['income']/df_income_year['income'])<0.002).all())
                 assert((np.abs(1-df_ckz_year['final-demand']/(df_demand_year['final-demand']))<0.005).all())
+                df_ckz_year=df_ckz_year.drop(['income','final-demand'],axis=1)
         except FileNotFoundError:
             df_ckz_year = df_ckz_year.assign(**{column:np.nan for column in df_ckz_year.columns if column not in ['prefecture','code']})
             df_ckz_year['year'] = year
@@ -383,6 +383,7 @@ def load_pref_all():
 
     df = df_income.merge(df_demand, on=['year','code', 'prefecture'],validate='one_to_one')
     df = df.merge(df_ckz, on=['prefecture','year','code'], suffixes=['','_ckzfile'])
+    assert(len(df)==len(df_ckz))
 
     from japandata.indices.data import pref_ind_df 
 
@@ -430,7 +431,7 @@ def load_pref_all():
 
             print('Special Debt / (demand-pre-debt) / (economic strength pre 3 years)')
             plt.hist(yeardf['special-debt']/(yeardf['demand-pre-debt'])/yeardf['economic-strength-index-prev3yearavg'],bins=50, color='green',zorder=-10)  
-            #plt.show()
+            plt.show()
             # Find the constant 
             scaling_factors = yeardf['special-debt']/(yeardf['demand-pre-debt']-yeardf['income'])/yeardf['economic-strength-index-prev3yearavg']
             scaling_factors = scaling_factors.loc[~scaling_factors.isna()]
