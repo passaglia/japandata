@@ -8,7 +8,6 @@ Author: Sam Passaglia
 
 import pandas as pd
 import numpy as np
-import xarray as xr
 import os
 
 DATA_URL = "https://github.com/passaglia/japandata-sources/raw/main/furusatonouzei/furusatonouzeidata.tar.gz"
@@ -213,7 +212,7 @@ def load_donations_by_year(year, correct_errors=True):
 
 def load_deductions_by_year(year):
     cols = {'prefecture':object, 'city':object, 
-        'city-reported-people':np.int64, 'city-reported-donations':np.int64, 'city-tax-deductions':np.int64, 
+        'city-reported-people':np.int64, 'city-reported-donations':np.int64, 'deductions':np.int64, 
         'pref-reported-people':np.int64, 'pref-reported-donations':np.int64, 'pref-tax-deductions':np.int64}
 
     if year == 'R4':
@@ -294,8 +293,6 @@ def load_deductions_by_year(year):
     df['prefecturecity'] = df["prefecture"]+df["city"]
     df['reported-people'] = df[['city-reported-people','pref-reported-people']].max(axis=1)
     df['reported-donations'] = df[['city-reported-donations','pref-reported-donations']].max(axis=1)
-    df['deductions'] = df['city-tax-deductions']
-    #+df['pref-tax-deductions']
     
     df = df.loc[(df['city'] != 'total') & (df['city'] != 'prefecture_cities_total')]
     df.reset_index(drop=True, inplace=True)
@@ -305,31 +302,43 @@ def load_deductions_by_year(year):
     return df
 
 def combine_loss_gain(df_loss, df_gain):
+    preftaxdeduction_df = df_loss.groupby('prefecture')['pref-tax-deductions'].sum()#.reset_index()
+
+    df = pd.merge(df_gain, df_loss,how='left', on=['prefecture','city','prefecturecity'],indicator=True)
+    assert(len(df.loc[df['_merge']=='left_only']) == 47)
+
+    for i in range(len(df)):
+        if pd.isna(df.loc[i,'pref-tax-deductions']):
+            df.loc[i,'deductions']=preftaxdeduction_df[df.loc[i,'prefecture']]
     
-    df = df_gain.copy()
+    assert(df.loc[df['prefecturecity']=='北海道prefecture','deductions'].values[0]==preftaxdeduction_df['北海道'])
 
-    new_columns = []
-    for column in df_loss.columns:
-        if column not in df_gain.columns:
-            new_columns.append(column)
-            df[column] = np.nan
+    df=df.drop('_merge',axis=1)
 
-    df['netgainminusdeductions'] = np.nan
+    df['netgainminusdeductions'] = df['net-gain']-df['deductions']
+    # df = df_gain.copy()
 
-    loss_index = 0 
-    for i in range(len(df_gain)):
+    # new_columns = []
+    # for column in df_loss.columns:
+    #     if column not in df_gain.columns:
+    #         new_columns.append(column)
+    #         df[column] = np.nan
 
-        if df_gain['city'][i]!='prefecture':
-            try:
-                loss_index = df_loss[df_loss['prefecturecity'] == df_gain['prefecturecity'][i]].index[0]
-                for column in new_columns:
-                    df.loc[i, column] = df_loss[column][loss_index]
-                    df.loc[i,'netgainminusdeductions']= df_gain['net-gain'][i]-df_loss['deductions'][loss_index]
-                
-            except IndexError():
-                print("couldn't find city")
+    # df['netgainminusdeductions'] = np.nan
 
-    df = df.set_index('prefecturecity')
+    # loss_index = 0 
+    # for i in range(len(df_gain)):
+
+    #     if df_gain['city'][i]!='prefecture':
+    #         try:
+    #             loss_index = df_loss[df_loss['prefecturecity'] == df_gain['prefecturecity'][i]].index[0]
+    #             for column in new_columns:
+    #                 df.loc[i, column] = df_loss[column][loss_index]
+    #                 df.loc[i,'netgainminusdeductions']= df_gain['net-gain'][i]-df_loss['deductions'][loss_index]
+    #         except IndexError():
+    #             print("couldn't find city")
+
+    #df = df.set_index('prefecturecity')
     
     return df
 
@@ -342,7 +351,7 @@ def clean_data(correct_errors=True):
     year_labels = ['H28','H29','H30','R1','R2','R3']
     corresponding_loss_labels = ['H29','H30','R1','R2','R3','R4']
 
-    year_df_list = []
+    df = pd.DataFrame()
     for i,year in enumerate(year_labels):
         print('loading gain ', year)
         df_gain = load_donations_by_year(year,correct_errors=correct_errors)
@@ -355,10 +364,10 @@ def clean_data(correct_errors=True):
 
         print('merging loss and gain dfs')
         year_df = combine_loss_gain(df_loss, df_gain)
-        year_df_list.append(year_df)
+        year_df['year'] = years[i]
+        df = pd.concat([df,year_df])
+        #year_df_list.append(year_df)
     
-    full_data_array = xr.concat([year_df.to_xarray() for year_df in year_df_list], dim=xr.DataArray(years,dims='year'))
-
     ## Now we also massage the rough array into an easier to handle form
     western_years = list(range(2008, 2022))
     df_rough['code']=df_gain['code'] ## This assumes that the municipalities are listed in the same order in the two files
@@ -374,21 +383,16 @@ def clean_data(correct_errors=True):
     df_rough_melted = df_donations.merge(df_count)
     df_rough_melted['year'] = pd.to_numeric(df_rough_melted['year']).astype('int')
 
-    return full_data_array, df_rough_melted
+    return df, df_rough_melted
 
 try:
-    furusato_arr = pd.read_parquet(CACHED_FILE).to_xarray()
+    furusato_df = pd.read_parquet(CACHED_FILE)
     furusato_rough_df = pd.read_parquet(ROUGH_CACHED_FILE)
 except FileNotFoundError:
     if not checkfordata():
         getdata()
-    furusato_arr, furusato_rough_df = clean_data()
-    furusato_arr.to_dataframe().to_parquet(CACHED_FILE)
+    furusato_df, furusato_rough_df = clean_data()
+    furusato_df.to_parquet(CACHED_FILE)
     furusato_rough_df.to_parquet(ROUGH_CACHED_FILE)
-
-## Contains all the data
-furusato_df = furusato_arr.to_dataframe().reset_index().fillna(value=np.nan)
-furusato_df = furusato_df.drop(furusato_df.loc[pd.isna(furusato_df['donations'])].index)
-
 
 ## TODO: ADD THE pref-tax-deductions to the prefecture rows, and separate those into a different df.

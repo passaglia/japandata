@@ -8,7 +8,6 @@ Author: Sam Passaglia
 
 import pandas as pd
 import numpy as np
-import xarray as xr
 import os
 from scipy import stats
 import matplotlib.pyplot as plt 
@@ -174,33 +173,57 @@ def load_muni_demand(year, revised=True):
 
     return df 
 
-def load_pref_ckz(year):
+def load_pref_ckz(year, revised=True):
 
-    fileextension = '.xls'
-    skiprows = 5
-    #forced_coltypes = {'code6digit':str, 'prefecture':str}
-    J=9
-    if year in [2020,2019,2018,2017,2016,2015]:
-        cols =  {'code-prefecture':0, 'final-demand':3, 'income':6, 'ckz':9}
+    if year in [2022,2021]:
+        fileextension = '.csv'
+        if year == 2022:
+            cols = ['prefecture','ckz']
+        elif year == 2021:
+            cols = ['prefecture','ckz-revised','ckz','diff']
+        df = pd.read_csv(PREF_FOLDER+str(year)+fileextension, header=None, names=cols)
+        df['code'] = df.index+1
+
+        if year == 2021:
+            if revised:
+                df = df.drop(['ckz','diff'],axis=1)
+                df = df.rename({'ckz-revised':'ckz'},axis=1)
+            else:
+                df = df.drop(['ckz-revised','diff'],axis=1)
+        
+        assert(np.abs(df.loc[df['code']==48,'ckz']-df.loc[df['code']!=48,'ckz'].sum()).values[0]<2)
+        df = df.drop(df.loc[df['code']==48].index)
+
+        df = df.replace({'大阪':'大阪府'})
+        df = df.replace({'京都':'京都府'})
+        df = df.replace({'東京':'東京都'})
+        df.loc[~df['prefecture'].str[-1].isin(['府','都','道','県']), 'prefecture'] = df.loc[~df['prefecture'].str[-1].isin(['府','都','道','県']), 'prefecture'] + '県'
+        df['ckz'] = 10**6*df['ckz']
     else:
-        cols =  {'code-prefecture':0, 'final-demand':3, 'income':6, 'ckz':9}
-       
-    df = pd.read_excel(PREF_FOLDER+str(year)+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
-    df = df.reset_index(drop=True)
+        fileextension = '.xls'
+        skiprows = 5
+        if year in [2020,2019,2018,2017,2016,2015]:
+            cols =  {'code-prefecture':0, 'final-demand':3, 'income':6, 'ckz':9}
+        else:
+            cols =  {'code-prefecture':0, 'final-demand':3, 'income':6, 'ckz':9}
+        
+        df = pd.read_excel(PREF_FOLDER+str(year)+fileextension, skiprows=skiprows, header=None,  usecols=cols.values(), names=cols.keys())
+        df = df.reset_index(drop=True)
 
-    df[['code','prefecture']] = df['code-prefecture'].str.extract('(?P<code>\d{1,})(?P<prefecture>.*)')
+        df[['code','prefecture']] = df['code-prefecture'].str.extract('(?P<code>\d{1,})(?P<prefecture>.*)')
 
-    df['year'] = year
-    df['income'] = 1000*df['income']
-    df['ckz'] = 1000*df['ckz']
-    df['final-demand'] = 1000*df['final-demand']
+        df['year'] = year
+        df['income'] = 1000*df['income']
+        df['ckz'] = 1000*df['ckz']
+        df['final-demand'] = 1000*df['final-demand']
 
-    df = df.drop(df.loc[pd.isna(df['prefecture'])].index)
-    df = df.drop('code-prefecture',axis=1)
-    df['code'] = df['code'].apply(lambda s: jaconv.z2h(s, digit=True) )
-    df['prefecture'] = df['prefecture'].str.replace('\u3000','')
+        df = df.drop(df.loc[pd.isna(df['prefecture'])].index)
+        df = df.drop('code-prefecture',axis=1)
+        df['code'] = df['code'].apply(lambda s: jaconv.z2h(s, digit=True) )
+        df['prefecture'] = df['prefecture'].str.replace('\u3000','')
 
     assert(len(df)==47)
+    assert((df['prefecture'] == pref_names_df['prefecture']).all())
     return df 
 
 def load_pref_income(year):
@@ -333,8 +356,8 @@ def load_pref_demand(year, revised=True):
 
 def load_pref_all():
 
-    known_adjustment_factors = {2020: 0.000510886}
-    estimated_adjustment_factors = {2020: 0.0005113}
+    known_adjustment_factors = {}
+    estimated_adjustment_factors = {}
 
     years = np.arange(2015, 2023)
     #years = np.arange(2015, 2021)
@@ -350,8 +373,9 @@ def load_pref_all():
         ## The ckz data doesn't go as far as the income/demand de
         try:
             df_ckz_year = load_pref_ckz(year)
-            assert((np.abs(1-df_ckz_year['income']/df_income_year['income'])<0.002).all())
-            assert((np.abs(1-df_ckz_year['final-demand']/(df_demand_year['final-demand']))<0.005).all())
+            if not (year in [2021,2022]):
+                assert((np.abs(1-df_ckz_year['income']/df_income_year['income'])<0.002).all())
+                assert((np.abs(1-df_ckz_year['final-demand']/(df_demand_year['final-demand']))<0.005).all())
         except FileNotFoundError:
             df_ckz_year = df_ckz_year.assign(**{column:np.nan for column in df_ckz_year.columns if column not in ['prefecture','code']})
             df_ckz_year['year'] = year
@@ -609,3 +633,4 @@ except FileNotFoundError:
     pref_df = pd.read_parquet(PREF_CACHE_FILE)
 
 ## TODO: move the charts to a different script?
+## TODO: make the charts for prefs
