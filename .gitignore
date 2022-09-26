@@ -4,6 +4,8 @@ furusatonouzeidata/
 chihoukoufuzeidata/
 populationdata/
 indicesdata/
+readingsdata/
+docs/
 *.parquet
 *.tar.gz
 
