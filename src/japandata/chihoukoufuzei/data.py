@@ -396,7 +396,7 @@ def load_pref_all():
     year_clone_df['year'] = 2022
     pref_ind_df = pd.concat([pref_ind_df, year_clone_df])
 
-
+    pref_ind_df = pref_ind_df[['year','prefecture','economic-strength-index']]
     pref_ind_df = pref_ind_df.loc[pref_ind_df['year']>(np.min(years)-4)]
 
     for pref in pref_ind_df.prefecture.unique():
@@ -503,6 +503,7 @@ def load_muni_all():
     local_ind_df = pd.concat([local_ind_df, year_clone_df])
 
     local_ind_df = local_ind_df.loc[local_ind_df['year']>(np.min(years)-4)]
+    local_ind_df = local_ind_df[['year','prefecture','city', 'code','economic-strength-index']]
 
     ## adding a new row for special wards of tokyo
     for year in local_ind_df.year.unique():
