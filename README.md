@@ -65,9 +65,9 @@ The data gradually becomes more detailed as time goes on, with early data contai
 
 <!-- #### TODO
 
--- Simplify the xarray / dataframe thingy. I think just use dataframe and can construct xarray when needed using multiindex. First check with japan then pref then local.
+-- Eliminate xarray, just use dataframe.
 
--- Include Gaikokujin data 
+-- In 2012 foreigners became registered and we start getting Gaikokujin / Nihonjin / Total split. I don't yet include the nihonji/gaikokujin split, which causes weird discontinuity in 2012 https://www.soumu.go.jp/menu_news/s-news/01gyosei02_02000041.html
 
 -- add docs for age data
 
@@ -90,8 +90,6 @@ from japandata.furusatonouzei.data import fndata
 ```
 
 <!-- #### TODO:
-
--- Simplify the xarray / dataframe thingy.
 
 -- Rename column keys to be more sensible 
 
