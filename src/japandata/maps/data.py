@@ -70,19 +70,23 @@ quality_suffix_dict = {"coarse": "c", "low": "l", "medium": "i", "high": "h"}
 
 
 def load_map(date=2022, level="local_dc", quality="coarse"):
-    ## TODO: Streamline this
     try:
         date = np.datetime64(date)
     except ValueError:
         date = np.datetime64(str(date) + "-12-31")
     assert date >= np.min(available_dates)
+
     assert quality in ["stylized", "coarse", "low", "medium", "high"]
+
     assert level in ["japan", "prefecture", "local", "local_dc"]
+
     if level == "japan" and quality not in ["stylized", "coarse"]:
         print("japan only available at stylized or coarse level")
         assert quality in ["stylized", "coarse"]
 
     if quality == "stylized":
+        # For stylized charts we need to remove islands and such at the local level
+        # Then rejoin to get the pref/japan levels
         if level == "prefecture":
             return join_localities(
                 remove_islands(load_map(date, "local_dc", "stylized"))
@@ -90,11 +94,15 @@ def load_map(date=2022, level="local_dc", quality="coarse"):
         elif level == "japan":
             return join_prefectures(load_map(date, "prefecture", "stylized"))
         else:
+            # If want a local stylized chart
             if date > np.datetime64(str(2017) + "-12-31"):
+                # either load a pre-stylized one (if year is modern enough)
                 needed_file = level_filename_dict[level] + ".stylized.json"
             else:
+                # construct one ourselves from the coarse charts
                 return stylize(load_map(date, level, "coarse"))
     else:
+        # All non-stylized charts we just download from server
         needed_date = str(
             np.max(
                 available_dates[np.where(date - available_dates >= np.timedelta64(0))]
