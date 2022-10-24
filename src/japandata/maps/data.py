@@ -70,6 +70,7 @@ quality_suffix_dict = {"coarse": "c", "low": "l", "medium": "i", "high": "h"}
 
 
 def load_map(date=2022, level="local_dc", quality="coarse"):
+    ## TODO: Streamline this
     try:
         date = np.datetime64(date)
     except ValueError:
@@ -89,7 +90,10 @@ def load_map(date=2022, level="local_dc", quality="coarse"):
         elif level == "japan":
             return join_prefectures(load_map(date, "prefecture", "stylized"))
         else:
-            needed_file = level_filename_dict[level] + ".stylized.json"
+            if date > np.datetime64(str(2017) + "-12-31"):
+                needed_file = level_filename_dict[level] + ".stylized.json"
+            else:
+                return stylize(load_map(date, level, "coarse"))
     else:
         needed_date = str(
             np.max(
@@ -180,6 +184,9 @@ def load_map(date=2022, level="local_dc", quality="coarse"):
     if level == "local_dc" or "local":
         map_df.drop(columns=["id"], errors="ignore", inplace=True)
 
+    map_df["prefecture"] = map_df["prefecture"].str.replace("沖繩", "沖縄")
+    map_df["id"] = map_df["prefecture"].str.replace("沖繩", "沖縄")
+
     return map_df
 
 
@@ -257,6 +264,31 @@ def join_prefectures(pref_df):
     return japan_df
 
 
+def stylize(local_df):
+    import shapely
+    import topojson as tp
+
+    # meters coords
+    local_df = remove_islands(local_df.to_crs("EPSG:30166"))
+    local_df = local_df.loc[~local_df["geometry"].is_empty]
+    local_df = local_df.loc[~(local_df["code"].isnull())]
+    topojson = tp.Topology(local_df, prequantize=False)
+    local_df = topojson.toposimplify(
+        1000,  ## this is in meters
+        prevent_oversimplify=False,
+    ).to_gdf()
+    local_df["geometry"] = [
+        shapely.geometry.MultiPolygon(
+            [P for P in geometry if P.area > 1000 * 1000]
+        )  ## meters * meters
+        for geometry in local_df["geometry"]
+    ]
+    # lat long coords
+    local_df = local_df.to_crs("EPSG:6668")
+
+    return local_df
+
+
 def get_dates():
     return available_dates
 
@@ -275,70 +307,38 @@ def generate_cache(levels=["local_dc"], qualities=["coarse"]):
                 load_map(date, level, quality)
 
 
-# Adding map
-def add_map(
+# Helper function to add a df to a map
+def add_df_to_map(
     df,
+    date,
+    level,
     quality="coarse",
 ):
-    map_df = gpd.GeoDataFrame()
-    for year in df["year"].unique():
-        map_df_year = load_map(year, level="local_dc", quality=quality)
-        map_df_year = map_df_year.drop(["bureau", "county", "special"], axis=1)
-        map_df_year = map_df_year.drop_duplicates(subset=["prefecture", "code"])
-        map_df_year["year"] = year
-        map_df = pd.concat([map_df, map_df_year])
 
-    map_df = map_df.drop(map_df.loc[~map_df["code"].isin(df["code"])].index, axis=0)
-    map_df = map_df.reset_index(drop=True)
-
+    map_df = load_map(date, level=level, quality=quality)
+    map_df = map_df.loc[~map_df["geometry"].is_empty]
+    if level == "prefecture":
+        merge_tokens = ["prefecture"]
+    else:
+        map_df = map_df.loc[~(map_df["code"].isnull())]
+        map_df = map_df.drop_duplicates(subset="code")
+        merge_tokens = ["prefecture", "code"]
     merged_df = pd.merge(
+        map_df,
         df,
-        map_df,
-        on=["year", "prefecture", "code"],
+        on=merge_tokens,
         how="left",
-        suffixes=["", "_map"],
+        suffixes=["", "_df"],
         validate="one_to_one",
+        indicator=True,
     )
-    assert len(merged_df) == len(df)
+    assert len(merged_df) == len(map_df)
 
-    merged_df = merged_df.drop("city_map", axis=1)
-    for index, row in merged_df.loc[merged_df["geometry"] == None].iterrows():
-        print(index)
-        try:
-            merged_df.at[index, "geometry"] = map_df.loc[
-                (map_df["code"] == row.code) & (map_df["prefecture"] == row.prefecture),
-                "geometry",
-            ].values[0]
-        except IndexError:
-            pass
+    print(len(merged_df.loc[(merged_df["_merge"] == "left_only")]), "failures")
 
     merged_df = gpd.GeoDataFrame(merged_df)
     return merged_df
 
-
-def add_pref_map(pref_df, quality="stylized"):
-    map_df = gpd.GeoDataFrame()
-    for year in pref_df["year"].unique():
-        map_df_year = load_map(year, level="prefecture", quality=quality)
-        map_df_year["year"] = year
-        map_df = pd.concat([map_df, map_df_year])
-    map_df = map_df.reset_index(drop=True)
-
-    merged_df = pd.merge(
-        pref_df,
-        map_df,
-        on=["year", "prefecture"],
-        validate="one_to_one",
-        suffixes=["", "_map"],
-    )
-    merged_df = gpd.GeoDataFrame(merged_df)
-    return merged_df
-
-
-# local_df = remove_islands(load_map(date=2022, level='local_dc', quality='stylized'))
-# pref_df = load_map(2022,'prefecture', 'stylized')
-# japan_df = load_map(2022,'japan', 'stylized')
-# japan_df2 = load_map(2022,'japan', 'coarse')
 
 ##
 ## Mapshaper commands to get a nice filtered japan map
@@ -359,3 +359,62 @@ def add_pref_map(pref_df, quality="stylized"):
 # -clean
 # -filter-islands min-area 600km2
 # -clean
+
+
+# ##################################
+# ### Plot all maps for debug ######
+# ##################################
+# rotation_origin = None
+# for year in range(1995, 2020):
+#     # for year in range(1994, 1995):
+#     print(year)
+#     print("loading map")
+#     df = load_map(year, level="local_dc", quality="coarse")
+#     df = df.loc[~df["geometry"].is_empty]
+#     df = remove_islands(df)
+
+#     print("moving okinawa")
+#     df.loc[df["prefecture"] == "沖縄県", "geometry"] = df.loc[
+#         df["prefecture"] == "沖縄県", "geometry"
+#     ].affine_transform([1, 0, 0, 1, 6.5, 13])
+
+#     print("rotating")
+#     rotation_angle = -17
+#     if rotation_origin is None:
+#         rotation_origin = df[df.is_valid].unary_union.centroid
+#     df["geometry"] = df["geometry"].rotate(rotation_angle, origin=rotation_origin)
+
+#     print("loading as topojson")
+#     df = df.to_crs("EPSG:30166")
+#     topojson = tp.Topology(df, prequantize=False)
+#     print("simplifying")
+#     df = topojson.toposimplify(
+#         2000,
+#         prevent_oversimplify=False,
+#     ).to_gdf()
+#     print("removing small things")
+#     df = df.to_crs("EPSG:30166")
+#     df["geometry"] = [
+#         shapely.geometry.MultiPolygon([P for P in geometry if P.area > 1000 * 1000])
+#         for geometry in df["geometry"]
+#     ]
+
+#     print("plotting")
+#     df = df.to_crs("EPSG:30166")
+#     bp = BasePlot(figsize=(6, 6), fontsize=12)
+#     fig, ax = bp.handlers()
+#     ax = df.plot(
+#         column="code",
+#         ax=ax,
+#         legend=False,
+#         lw=0.05,
+#         edgecolor="none"
+#         # edgecolor="#4341417c",
+#     )
+#     plt.axis("off")
+#     ax.set_xlim([-0.75 * 10**6, 0.98 * 10**6])
+#     ax.set_ylim([-0.28 * 10**6, 0.95 * 10**6])
+
+#     print("saving")
+#     fig.savefig("local/" + str(year) + ".pdf")
+#     plt.close("all")

@@ -48,6 +48,7 @@ map_df = load_map(date, level, quality)
 
 `quality` should be one of `coarse`, `low`, `medium`, `high` and controls the geometrical detail of the map. For many purposes `coarse` is sufficient.
 
+<!-- TODO: Update docs  -->
 ### Population
 
 `japandata.population.data` provides data about the population and demographics of japan, at the national, prefectural, and municipal level, annually from 1967 to 2020. This information is sourced from the [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via the [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
@@ -61,17 +62,13 @@ from japandata.population.data import japan_pop_df, pref_pop_df, local_pop_df
 * `pref_pop_df`: Information about each prefecture, 1967-2020
 * `local_pop_df`: Information about each locality, 1995-2020. Contains redundancies: both designated cities and their constituent subdivisions are included.
 
-The data gradually becomes more detailed as time goes on, with early data containing only the total population, the gender breakdown, and the number of households, while later data includes e.g. the number of births and deaths. Each year is a Japanese fiscal year, stretching from April 1st of the calendar year to March 31st of the subsequent calendar year. For example, the row marked '1995' contains the number of births from April 1st, 1995 to March 31st, 1996. The total population in the '1995' row is the population at the end of this period, on March 31st 1996.
+The data gradually becomes more detailed as time goes on, with early data containing only the total population, the gender breakdown, and the number of households, while later data includes e.g. the number of births and deaths. Each year is a Japanese fiscal year, stretching from April 1st to March 31st of the subsequent calendar year. For example, the row marked '1995' contains the number of births from April 1st, 1995 to March 31st, 1996. The total population in the '1995' row is the population at the end of this period, on March 31st 1996.
 
 <!-- #### TODO
 
--- Eliminate xarray, just use dataframe.
+-- update docs for pop
 
--- In 2012 foreigners became registered and we start getting Gaikokujin / Nihonjin / Total split. I don't yet include the nihonji/gaikokujin split, which causes weird discontinuity in 2012 https://www.soumu.go.jp/menu_news/s-news/01gyosei02_02000041.html
-
--- add docs for age data
-
--- Should I fix the rate columns? I think so, but maybe have a flag to allow getting the direct table output 
+-- refactor and add docs for age data
 
 -- Is there a way to compute fertility rate? 
 

@@ -192,7 +192,6 @@ def load_pop_data(year, datalevel="prefecture", poptype="resident"):
         cols += ["total-pop-corrected"]
     if poptype == "japanese":
         cols += ["households-singlecitizenship", "households-multicitizenship"]
-
     cols += ["households"]
     if year == 2005:
         cols += ["households-corrected"]
@@ -290,12 +289,10 @@ def load_pop_data(year, datalevel="prefecture", poptype="resident"):
         df.loc[df["city"] == "蘂取郡蘂取村", "code6digit"] = "017001"
 
     if datalevel == "prefecture":
-        # df = df.set_index("prefecture")
         df["code"] = df["code6digit"].apply(lambda s: s if pd.isna(s) else s[:2])
         df.drop(["code6digit"], inplace=True, axis=1)
     if datalevel == "local":
         df["code"] = df["code6digit"].apply(lambda s: s if pd.isna(s) else s[:-1])
-        # df = df.set_index("code6digit")
 
     ##### SELF-CONSISTENCY TESTS ####
     assert (df["men"] + df["women"] == df["total-pop"]).all()
@@ -532,12 +529,3 @@ except FileNotFoundError:
     local_age_df.to_parquet(LOCAL_AGE_CACHE)
 
 # Be careful -- local pop df contains duplicates (i.e. a municipality and its subcomponents)
-
-# def excelToIndex(excelString):
-#     LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-#     number = 0
-#     power = 1
-#     for i in list(range(len(excelString)))[::-1]:
-#         number += (LETTERS.index(excelString[i]) + 1) * power
-#         power *= 26
-#     return number - 1
