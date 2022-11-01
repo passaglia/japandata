@@ -7,13 +7,12 @@
 
 * [`japandata.maps`](#maps): Geographic information,
 * [`japandata.population`](#population): Population statistics,
-* [`japandata.furusatonouzei`](#furusato-nouzei) : Data about the *furusato nouzei* tax transfer program,
 * [`japandata.indices`](#indices) : Municipal economic health indicators.
 * [`japandata.readings`](#readings) : Kana and romaji readings of the names of japanese municipalities and prefectures
 
 Jupyter notebooks in the `/examples` folder demonstrate how to use these datasets.
 
-This package is provided under a MPL 2.0 license. Each dataset is subject to its own license as noted below. The datasets are hosted at the companion repository [**JapanData-sources**](https://github.com/passaglia/japandata-sources) and are fetched when first needed.
+This package is provided under a MPL 2.0 license. Each dataset is subject to its own license noted below. The datasets are fetched from the companion repository [**JapanData-sources**](https://github.com/passaglia/japandata-sources) when needed.
 
 ## Installation
 
@@ -75,22 +74,6 @@ The data gradually becomes more detailed as time goes on, with early data contai
 -- Working population: 15-64
 
 -->
-
-### Furusato Nouzei
-
-`japandata.furusatonouzei.data` provides information about the ***Furusato Nouzei***, or *Hometown Tax Transfer*, program. This is a part of the Japanese tax system in which taxpayers can divert part of the taxes which would fund their local government to instead go to a different local government. In exchange for doing so, the taxpayer receives various 'tokens of gratitude' with a value which can in principle be no more than 30% of the diverted tax amount.
-
-The data provided here is collected from the [Ministry of Internal Affairs](https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/czaisei_seido/furusato/archive/) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
-
-```
-from japandata.furusatonouzei.data import fndata
-```
-
-<!-- #### TODO:
-
--- Rename column keys to be more sensible 
-
--- Fix documentation -->
 
 ### Indices 
 
