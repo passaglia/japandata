@@ -4,3 +4,5 @@ romkan
 jaconv
 geopandas
 pandas
+flake8
+Flake8-pyproject

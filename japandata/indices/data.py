@@ -6,17 +6,17 @@ Module which loads, caches, and provides access to indices data
 Author: Sam Passaglia
 """
 
-import pandas as pd
-import numpy as np
-import xarray as xr
 import os
+
+import numpy as np
+import pandas as pd
+import xarray as xr
+
 from japandata.maps.data import load_map
 
 # TODO: Remove the xarray dep
 
-DATA_URL = (
-    "https://github.com/passaglia/japandata-sources/raw/main/indices/indicesdata.tar.gz"
-)
+DATA_URL = "https://github.com/passaglia/japandata-sources/raw/main/indices/indicesdata.tar.gz"
 DATA_FOLDER = os.path.join(os.path.dirname(__file__), "indicesdata/")
 
 PREF_CACHE = os.path.join(os.path.dirname(__file__), "pref.parquet")
@@ -37,8 +37,8 @@ def getdata():
         print("data already gotten")
         return
     else:
-        import urllib.request
         import tarfile
+        import urllib.request
 
         ftpstream = urllib.request.urlopen(DATA_URL)
         rawfile = tarfile.open(fileobj=ftpstream, mode="r|gz")
@@ -89,9 +89,7 @@ def load_data(year, datalevel="prefecture"):
     if (year == 2012 or year == 2013) and (datalevel != "prefecturemean"):
         cols += ["laspeyres-adjusted"]
 
-    westernToLabel = (
-        lambda year: "H" + str(year - 1988) if year < 2019 else "R" + str(year - 2018)
-    )
+    westernToLabel = lambda year: "H" + str(year - 1988) if year < 2019 else "R" + str(year - 2018)
 
     filelabel = westernToLabel(year)
 
@@ -278,29 +276,16 @@ except FileNotFoundError:
     (designatedcity_ind_xr.to_dataframe()).to_parquet(DESIGNATEDCITY_CACHE)
     (capital_ind_xr.to_dataframe()).to_parquet(CAPITAL_CACHE)
 
-pref_ind_df = (
-    pref_ind_xr.to_dataframe().reset_index().drop("index", axis=1).fillna(value=np.nan)
-)
+pref_ind_df = pref_ind_xr.to_dataframe().reset_index().drop("index", axis=1).fillna(value=np.nan)
 prefmean_ind_df = (
-    prefmean_ind_xr.to_dataframe()
-    .reset_index()
-    .drop("index", axis=1)
-    .fillna(value=np.nan)
+    prefmean_ind_xr.to_dataframe().reset_index().drop("index", axis=1).fillna(value=np.nan)
 )
-local_ind_df = (
-    local_ind_xr.to_dataframe().reset_index().drop("index", axis=1).fillna(value=np.nan)
-)
+local_ind_df = local_ind_xr.to_dataframe().reset_index().drop("index", axis=1).fillna(value=np.nan)
 local_ind_df = local_ind_df.drop(local_ind_df.loc[pd.isna(local_ind_df["city"])].index)
 
 designatedcity_ind_df = (
-    designatedcity_ind_xr.to_dataframe()
-    .reset_index()
-    .drop("index", axis=1)
-    .fillna(value=np.nan)
+    designatedcity_ind_xr.to_dataframe().reset_index().drop("index", axis=1).fillna(value=np.nan)
 )
 capital_ind_df = (
-    capital_ind_xr.to_dataframe()
-    .reset_index()
-    .drop("index", axis=1)
-    .fillna(value=np.nan)
+    capital_ind_xr.to_dataframe().reset_index().drop("index", axis=1).fillna(value=np.nan)
 )

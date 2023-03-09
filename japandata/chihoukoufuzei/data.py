@@ -6,12 +6,14 @@ Module which processes and provides access to data about the chihoukoufuzei tax 
 Author: Sam Passaglia
 """
 
-import pandas as pd
-import numpy as np
 import os
-from scipy import stats
-import matplotlib.pyplot as plt
+
 import jaconv
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from scipy import stats
+
 from japandata.readings.data import pref_names_df
 
 # jaconv.z2h(df['code'][0], digit=True)
@@ -34,8 +36,8 @@ def getdata():
         print("data already gotten")
         return
     else:
-        import urllib.request
         import tarfile
+        import urllib.request
 
         ftpstream = urllib.request.urlopen(DATA_URL)
         rawfile = tarfile.open(fileobj=ftpstream, mode="r|gz")
@@ -355,9 +357,7 @@ def load_muni_demand(year, revised=True):
     df["code"] = df["code-str"].apply(lambda s: s[1:6])
     df = df.drop("code-str", axis=1)
 
-    assert (
-        np.abs(df["demand-pre-debt"] - df["special-debt"] - df["final-demand"]) < 1000
-    ).all()
+    assert (np.abs(df["demand-pre-debt"] - df["special-debt"] - df["final-demand"]) < 1000).all()
 
     assert len(df) == 1719
 
@@ -372,9 +372,7 @@ def load_pref_ckz(year, revised=True):
             cols = ["prefecture", "ckz"]
         elif year == 2021:
             cols = ["prefecture", "ckz-revised", "ckz", "diff"]
-        df = pd.read_csv(
-            PREF_FOLDER + str(year) + fileextension, header=None, names=cols
-        )
+        df = pd.read_csv(PREF_FOLDER + str(year) + fileextension, header=None, names=cols)
         df["code"] = (df.index + 1).astype(str)
 
         if year == 2021:
@@ -386,8 +384,7 @@ def load_pref_ckz(year, revised=True):
 
         assert (
             np.abs(
-                df.loc[df["code"] == "48", "ckz"]
-                - df.loc[df["code"] != "48", "ckz"].sum()
+                df.loc[df["code"] == "48", "ckz"] - df.loc[df["code"] != "48", "ckz"].sum()
             ).values[0]
             < 2
         )
@@ -397,8 +394,7 @@ def load_pref_ckz(year, revised=True):
         df = df.replace({"京都": "京都府"})
         df = df.replace({"東京": "東京都"})
         df.loc[~df["prefecture"].str[-1].isin(["府", "都", "道", "県"]), "prefecture"] = (
-            df.loc[~df["prefecture"].str[-1].isin(["府", "都", "道", "県"]), "prefecture"]
-            + "県"
+            df.loc[~df["prefecture"].str[-1].isin(["府", "都", "道", "県"]), "prefecture"] + "県"
         )
         df["ckz"] = 10**6 * df["ckz"]
     else:
@@ -487,9 +483,7 @@ def load_pref_income(year):
         else:
             return pref + "県"
 
-    df["prefecture"] = (
-        df["prefecture"].str.strip().str.replace(" ", "").apply(apply_todoufuken)
-    )
+    df["prefecture"] = df["prefecture"].str.strip().str.replace(" ", "").apply(apply_todoufuken)
 
     assert len(df) == 47
     return df
@@ -644,14 +638,10 @@ def load_pref_demand(year, revised=True):
         else:
             return pref + "県"
 
-    df["prefecture"] = (
-        df["prefecture"].str.strip().str.replace(" ", "").apply(apply_todoufuken)
-    )
+    df["prefecture"] = df["prefecture"].str.strip().str.replace(" ", "").apply(apply_todoufuken)
     df = df.reset_index(drop=True)
 
-    assert (
-        np.abs(df["demand-pre-debt"] - df["special-debt"] - df["final-demand"]) < 1000
-    ).all()
+    assert (np.abs(df["demand-pre-debt"] - df["special-debt"] - df["final-demand"]) < 1000).all()
     assert len(df) == 47
 
     return df
@@ -676,14 +666,9 @@ def load_pref_all():
         try:
             df_ckz_year = load_pref_ckz(year)
             if not (year in [2021, 2022]):
+                assert (np.abs(1 - df_ckz_year["income"] / df_income_year["income"]) < 0.002).all()
                 assert (
-                    np.abs(1 - df_ckz_year["income"] / df_income_year["income"]) < 0.002
-                ).all()
-                assert (
-                    np.abs(
-                        1
-                        - df_ckz_year["final-demand"] / (df_demand_year["final-demand"])
-                    )
+                    np.abs(1 - df_ckz_year["final-demand"] / (df_demand_year["final-demand"]))
                     < 0.005
                 ).all()
                 df_ckz_year = df_ckz_year.drop(["income", "final-demand"], axis=1)
@@ -698,9 +683,7 @@ def load_pref_all():
             df_ckz_year["year"] = year
         df_ckz = pd.concat([df_ckz, df_ckz_year], ignore_index=True)
 
-    df = df_income.merge(
-        df_demand, on=["year", "code", "prefecture"], validate="one_to_one"
-    )
+    df = df_income.merge(df_demand, on=["year", "code", "prefecture"], validate="one_to_one")
     df = df.merge(df_ckz, on=["prefecture", "year", "code"], suffixes=["", "_ckzfile"])
     assert len(df) == len(df_ckz)
 
@@ -733,9 +716,7 @@ def load_pref_all():
         extra_row["year"] = latest_row["year"] + 1
         extra_row["prefecture"] = latest_row["prefecture"]
         extra_row["economic-strength-index-prev3yearavg"] = np.mean(
-            pref_ind_df.loc[prefLoc]
-            .sort_values(by="year")["economic-strength-index"]
-            .values[-3:]
+            pref_ind_df.loc[prefLoc].sort_values(by="year")["economic-strength-index"].values[-3:]
         )
 
         pref_ind_df = pd.concat([pref_ind_df, extra_row], ignore_index=True)
@@ -754,9 +735,7 @@ def load_pref_all():
     )
     for year in years:
         if year not in pref_ind_df.year.unique():
-            pref_ind_df = pd.concat(
-                [pref_ind_df, empty_data_template.assign(year=year)]
-            )
+            pref_ind_df = pd.concat([pref_ind_df, empty_data_template.assign(year=year)])
 
     df = df.merge(pref_ind_df, on=["prefecture", "year"], validate="one_to_one")
 
@@ -786,10 +765,7 @@ def load_pref_all():
         )
         print("total debt", yeardf["special-debt"].sum() / 10**12, "trillion yen")
         if year in known_adjustment_factors.keys():
-            ckz = (
-                yeardf["final-demand"] * (1 - known_adjustment_factors[year])
-                - yeardf["income"]
-            )
+            ckz = yeardf["final-demand"] * (1 - known_adjustment_factors[year]) - yeardf["income"]
             ckz.iloc[np.where(ckz < 0)[0]] = 0
             print("LAT computed", ckz.sum() / 10**12, "trillion yen")
 
@@ -905,9 +881,7 @@ def load_muni_all():
     local_ind_df = pd.concat([local_ind_df, year_clone_df])
 
     local_ind_df = local_ind_df.loc[local_ind_df["year"] > (np.min(years) - 4)]
-    local_ind_df = local_ind_df[
-        ["year", "prefecture", "city", "code", "economic-strength-index"]
-    ]
+    local_ind_df = local_ind_df[["year", "prefecture", "city", "code", "economic-strength-index"]]
 
     ## adding a new row for special wards of tokyo
     for year in local_ind_df.year.unique():
@@ -941,13 +915,9 @@ def load_muni_all():
         ].reset_index(drop=True)
         extra_row = pd.DataFrame(np.nan, index=[0], columns=latest_row.columns)
         extra_row["year"] = latest_row["year"] + 1
-        extra_row[["prefecture", "code", "city"]] = latest_row[
-            ["prefecture", "code", "city"]
-        ]
+        extra_row[["prefecture", "code", "city"]] = latest_row[["prefecture", "code", "city"]]
         extra_row["economic-strength-index-prev3yearavg"] = np.mean(
-            local_ind_df.loc[codeLoc]
-            .sort_values(by="year")["economic-strength-index"]
-            .values[-3:]
+            local_ind_df.loc[codeLoc].sort_values(by="year")["economic-strength-index"].values[-3:]
         )
 
         local_ind_df = pd.concat([local_ind_df, extra_row], ignore_index=True)
@@ -966,14 +936,10 @@ def load_muni_all():
     )
     for year in years:
         if year not in local_ind_df.year.unique():
-            local_ind_df = pd.concat(
-                [local_ind_df, empty_data_template.assign(year=year)]
-            )
+            local_ind_df = pd.concat([local_ind_df, empty_data_template.assign(year=year)])
 
     local_ind_df = local_ind_df.drop("city", axis=1)
-    df_withind = df.merge(
-        local_ind_df, on=["prefecture", "code", "year"], validate="one_to_one"
-    )
+    df_withind = df.merge(local_ind_df, on=["prefecture", "code", "year"], validate="one_to_one")
     assert len(df_withind) == len(df)
     df = df_withind
 
@@ -1018,9 +984,7 @@ def load_muni_all():
         adjustment_factors_list.append(m)
         print("adjustment factor", m)
 
-        frac_compensated = (
-            yeardf["ckz"] / (yeardf["final-demand"] - yeardf["income"])
-        ).values
+        frac_compensated = (yeardf["ckz"] / (yeardf["final-demand"] - yeardf["income"])).values
         print(
             "median compensation fraction after debt",
             np.median(frac_compensated[np.where(frac_compensated > 0)]),
@@ -1031,17 +995,11 @@ def load_muni_all():
         )
         print(
             "debt as fraction of pre-debt need",
-            (
-                yeardf["special-debt"].sum()
-                / (yeardf["demand-pre-debt"] - yeardf["income"]).sum()
-            ),
+            (yeardf["special-debt"].sum() / (yeardf["demand-pre-debt"] - yeardf["income"]).sum()),
         )
         print(
             "debt as fraction of debt + total amount",
-            (
-                yeardf["special-debt"].sum()
-                / (yeardf["special-debt"].sum() + yeardf["ckz"].sum())
-            ),
+            (yeardf["special-debt"].sum() / (yeardf["special-debt"].sum() + yeardf["ckz"].sum())),
         )  ## This is the closest thing to the 0.1664 number for 2020
 
         # yeardf = yeardf.merge(local_ind_df,on=['code','year'],validate='one_to_one')

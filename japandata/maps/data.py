@@ -6,13 +6,14 @@ Module which loads, caches, and provides access to maps of japan
 Author: Sam Passaglia
 """
 
-import geopandas as gpd
-import pandas as pd
 import os
-import numpy as np
-import urllib.request
 import shutil
+import urllib.request
 from urllib.error import HTTPError
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
 
 CACHE_FOLDER = os.path.join(os.path.dirname(__file__), "cache/")
 
@@ -88,9 +89,7 @@ def load_map(date=2022, level="local_dc", quality="coarse"):
         # For stylized charts we need to remove islands and such at the local level
         # Then rejoin to get the pref/japan levels
         if level == "prefecture":
-            return join_localities(
-                remove_islands(load_map(date, "local_dc", "stylized"))
-            )
+            return join_localities(remove_islands(load_map(date, "local_dc", "stylized")))
         elif level == "japan":
             return join_prefectures(load_map(date, "prefecture", "stylized"))
         else:
@@ -104,9 +103,7 @@ def load_map(date=2022, level="local_dc", quality="coarse"):
     else:
         # All non-stylized charts we just download from server
         needed_date = str(
-            np.max(
-                available_dates[np.where(date - available_dates >= np.timedelta64(0))]
-            )
+            np.max(available_dates[np.where(date - available_dates >= np.timedelta64(0))])
         )
         needed_file = (
             needed_date.replace("-", "")
@@ -137,16 +134,12 @@ def load_map(date=2022, level="local_dc", quality="coarse"):
                 from shapely.ops import unary_union
                 from shapely.validation import make_valid
 
-                pref_df = load_map(
-                    date=needed_date, level="prefecture", quality=quality
-                )
+                pref_df = load_map(date=needed_date, level="prefecture", quality=quality)
                 polygonlist = []
                 for i in range(len(pref_df)):
                     print(i)
                     polygonlist.append(make_valid(pref_df.geometry[i]))
-                map_df = gpd.GeoDataFrame(
-                    geometry=[unary_union(polygonlist)], crs=pref_df.crs
-                )
+                map_df = gpd.GeoDataFrame(geometry=[unary_union(polygonlist)], crs=pref_df.crs)
                 map_df.to_file(CACHE_FOLDER + needed_file, driver="GeoJSON")
             else:
                 return Exception("Map was not found")
@@ -236,9 +229,9 @@ def remove_islands(local_df):
         + island_codes_tokyo
     )
 
-    return local_df.drop(
-        local_df.loc[local_df["code"].isin(island_codes)].index
-    ).reset_index(drop=True)
+    return local_df.drop(local_df.loc[local_df["code"].isin(island_codes)].index).reset_index(
+        drop=True
+    )
 
 
 def join_localities(local_df):
@@ -255,9 +248,7 @@ def join_localities(local_df):
         polygons.append(unary_union(polygonlist))
         prefs.append(prefecture)
 
-    pref_df = gpd.GeoDataFrame(
-        prefs, columns=["prefecture"], geometry=polygons, crs=local_df.crs
-    )
+    pref_df = gpd.GeoDataFrame(prefs, columns=["prefecture"], geometry=polygons, crs=local_df.crs)
     return pref_df
 
 

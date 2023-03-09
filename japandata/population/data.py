@@ -6,16 +6,19 @@ Module which loads, caches, and provides access to population data
 Author: Sam Passaglia
 """
 
-import pandas as pd
-import numpy as np
 import os
+
+import numpy as np
+import pandas as pd
 
 ## Figure out the new datastructure for the load all pop piece
 ## Implement japanese and foreigner in age
 ## Implement in load all age piece
 ## Make the plot for the mobility project
 
-DATA_URL = "https://github.com/passaglia/japandata-sources/raw/main/population/populationdata.tar.gz"
+DATA_URL = (
+    "https://github.com/passaglia/japandata-sources/raw/main/population/populationdata.tar.gz"
+)
 DATA_FOLDER = os.path.join(os.path.dirname(__file__), "populationdata/")
 
 JAPAN_POP_CACHE = os.path.join(os.path.dirname(__file__), "japan_pop.parquet")
@@ -35,8 +38,8 @@ def getdata():
     if checkfordata():
         print("data already gotten")
     else:
-        import urllib.request
         import tarfile
+        import urllib.request
 
         ftpstream = urllib.request.urlopen(DATA_URL)
         rawfile = tarfile.open(fileobj=ftpstream, mode="r|gz")
@@ -299,9 +302,7 @@ def load_pop_data(year, datalevel="prefecture", poptype="resident"):
     if year >= 1980:
         assert (df["moved-in"] + df["born"] + df["other-in"] == df["total-in"]).all()
         if year != 1996 and datalevel != "local":
-            assert (
-                df["moved-out"] + df["died"] + df["other-out"] == df["total-out"]
-            ).all()
+            assert (df["moved-out"] + df["died"] + df["other-out"] == df["total-out"]).all()
         assert (df["total-in"] - df["total-out"] == df["in-minus-out"]).all()
         assert (df["born"] - df["died"] == df["born-minus-died"]).all()
         assert (
@@ -309,12 +310,8 @@ def load_pop_data(year, datalevel="prefecture", poptype="resident"):
             == df["social-in-minus-social-out"]
         ).all()
     if year >= 2013:
-        assert (
-            df["moved-in-domestic"] + df["moved-in-international"] == df["moved-in"]
-        ).all()
-        assert (
-            df["moved-out-domestic"] + df["moved-out-international"] == df["moved-out"]
-        ).all()
+        assert (df["moved-in-domestic"] + df["moved-in-international"] == df["moved-in"]).all()
+        assert (df["moved-out-domestic"] + df["moved-out-international"] == df["moved-out"]).all()
     if datalevel == "prefecture":
         assert (
             df.drop(df.loc[df["prefecture"] == "合計"].index)
@@ -390,9 +387,7 @@ def generate_pop_dfs():
                     .reset_index(drop=True)
                 )
                 ### checking consistency of the japan table and the local table
-                assert (
-                    japan_df_year.values == local_df_year_prefrows.iloc[0].values
-                ).all()
+                assert (japan_df_year.values == local_df_year_prefrows.iloc[0].values).all()
                 ### checking consistency of the prefecture table and the local table
                 assert (
                     pref_df_year.drop(
