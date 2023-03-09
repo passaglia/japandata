@@ -16,17 +16,8 @@ This package is provided under a MPL 2.0 license. Each dataset is subject to its
 
 ## Installation
 
-**JapanData** can be installed using pip
-
 ``` 
 pip install japandata
-```
-
-If you wish to enhance or extend **JapanData**, you can make changes by cloning this repository and then either adding `src/japandata` directly to your python path or by installing the local version using pip
-
-```
-python3 -m build
-pip install -e .
 ```
 
 ## Available Datasets
