@@ -1,0 +1,8 @@
+matplotlib
+black
+flake8
+Flake8-pyproject
+isort
+mlflow-skinny==2.1.1
+pretty-errors==1.2.25
+build
