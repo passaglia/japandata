@@ -7,8 +7,8 @@
 
 * [`japandata.maps`](#maps): Geographic information,
 * [`japandata.population`](#population): Population statistics,
-* [`japandata.indices`](#indices) : Municipal economic health indicators.
-* [`japandata.readings`](#readings) : Kana and romaji readings of the names of japanese municipalities and prefectures
+* [`japandata.indices`](#indices): Municipal economic health indicators.
+* [`japandata.readings`](#readings): Kana and romaji readings of the names of japanese municipalities and prefectures
 
 Jupyter notebooks in the `/examples` folder demonstrate how to use these datasets.
 
