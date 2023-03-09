@@ -2,26 +2,16 @@
 
 [![PyPI](https://img.shields.io/pypi/v/japandata?label=latest%20release)](https://pypi.org/project/japandata/)
 
-**JapanData** is a python package which provides access to datasets about Japan. It includes:
+**JapanData** is a python library that provides easy access to geographic data about Japan:
 
-* [`japandata.maps`](#maps): Geographic information,
+* [`japandata.maps`](#maps): Maps of Japan, its prefectures, and municipalities,
 * [`japandata.population`](#population): Population statistics,
+* [`japandata.readings`](#readings): Kana and romaji readings of the names of Japanese municipalities and prefectures,
 * [`japandata.indices`](#indices): Municipal economic health indicators.
-* [`japandata.readings`](#readings): Kana and romaji readings of the names of japanese municipalities and prefectures
 
-Jupyter notebooks in the `/examples` folder demonstrate how to use these datasets.
+# Usage
 
-This package is provided under a MPL 2.0 license. Each dataset is subject to its own license noted below. The datasets are fetched from the companion repository [**JapanData-sources**](https://github.com/passaglia/japandata-sources) when needed.
-
-## Installation
-
-``` 
-pip install japandata
-```
-
-## Available Datasets
-
-### Maps 
+## japandata.maps 
 
 `japandata.maps.data` provides maps of Japan, its prefectures, and its municipalities, from 1920 to today. These maps are sourced from [Asanobu Kitamoto, ROIS-DS Center for Open Data in the Humanities](https://geoshape.ex.nii.ac.jp/city/choropleth/), and they are licensed CC BY-SA 4.0.  They take the form of geopandas dataframes containing topojson maps.
 
@@ -38,7 +28,7 @@ map_df = load_map(date, level, quality)
 `quality` should be one of `coarse`, `low`, `medium`, `high` and controls the geometrical detail of the map. For many purposes `coarse` is sufficient.
 
 <!-- TODO: Update docs  -->
-### Population
+## japandata.population
 
 `japandata.population.data` provides data about the population and demographics of japan, at the national, prefectural, and municipal level, annually from 1967 to 2020. This information is sourced from the [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via the [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
 
@@ -65,7 +55,7 @@ The data gradually becomes more detailed as time goes on, with early data contai
 
 -->
 
-### Indices 
+## japandata.indices 
 
 `japandata.indices.data` contains indices of the economic health of each municipality and prefecture in Japan. These indices are produced by the government for various purposes, such as to determine financial transfers between municipalities or to restrict municipal debt issuances. The data is provided by the [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken). It covers FY2005 to FY2020.
 
@@ -91,7 +81,7 @@ Prior to 2008, the `debt-restriction-rate` (起債制限比率) was used to regu
 
 The `laspeyres` index here measures the salary of municipal government employees relative to national government employees, controlling for educational history and seniority. A figure greater than 100 indicates municipal employees are being paid more than national employees.
 
-### Readings
+### japandata.readings
 
 ```
 from japandata.readings.data import names_df, pref_names_df 
@@ -99,13 +89,12 @@ from japandata.readings.data import names_df, pref_names_df
 
 These dataframes contain kanji, kana, and romaji readings of the names of Japanese municipalities and prefectures.
 
-<!-- ### GENERAL TODO
--- Add census data?  https://www.stat.go.jp/data/kokusei/2020/kekka.html
+# Installation
 
--- Labour force survey: https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00450071&tstat=000001011791
+``` 
+pip install japandata
+```
 
--- Gender balance info: Government https://www.gender.go.jp/policy/suishin_law/csv_dl/index.html Private: https://positive-ryouritsu.mhlw.go.jp/positivedb/
-
--- weather: http://tenkiapi.jp/
-
--->
+# License
+Code: MIT
+Data: Noted above.
