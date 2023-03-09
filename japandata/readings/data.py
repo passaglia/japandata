@@ -9,7 +9,6 @@ Author: Sam Passaglia
 import os
 
 import jaconv
-import numpy as np
 import pandas as pd
 import romkan
 
@@ -38,7 +37,6 @@ def getdata():
 
 
 def load_readings_R2file():
-
     colnames = ["code6digit", "prefecture", "city", "prefecture-kana", "city-kana"]
 
     df = pd.read_excel(READINGS_FILE, names=colnames, dtype={"code6digit": str})

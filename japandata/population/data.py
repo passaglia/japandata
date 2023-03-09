@@ -346,7 +346,6 @@ def load_pop_data(year, datalevel="prefecture", poptype="resident"):
 
 
 def generate_pop_dfs():
-
     poptypes = ["resident", "japanese", "foreigner"]
 
     complete_japan_df = pd.DataFrame()
@@ -423,7 +422,6 @@ def generate_pop_dfs():
 
 
 def clean_age_data():
-
     years = np.arange(1994, 2023)
     df_japan_age_list = []
     df_pref_age_list = []

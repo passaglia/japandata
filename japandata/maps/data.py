@@ -1,7 +1,7 @@
 """
 maps/data.py
 
-Module which loads, caches, and provides access to maps of japan
+Module which loads, caches, and provides access to maps of japan. Original data from https://geoshape.ex.nii.ac.jp/city/choropleth/
 
 Author: Sam Passaglia
 """
@@ -279,7 +279,7 @@ def stylize(local_df):
     local_df["geometry"] = [
         shapely.geometry.MultiPolygon(
             [P for P in geometry if P.area > 1000 * 1000]
-        )  ## meters * meters
+        )  # meters * meters
         for geometry in local_df["geometry"]
     ]
     # lat long coords
@@ -313,7 +313,6 @@ def add_df_to_map(
     level,
     quality="coarse",
 ):
-
     map_df = load_map(date, level=level, quality=quality)
     map_df = map_df.loc[~map_df["geometry"].is_empty]
     if level == "prefecture":
@@ -339,8 +338,7 @@ def add_df_to_map(
     return merged_df
 
 
-##
-## Mapshaper commands to get a nice filtered japan map
+# Mapshaper commands to get a nice filtered japan map
 # -filter "!['01518', '01519','01517', '01367', '01695', '01696', '01697', '01698','01699', '01700','44322','35305','32528','32525','32526','32527','13421','13361','13362','13363','13364','13381','13382','13401','13402'].includes(N03_007)"
 # -clean
 # -explode
@@ -353,7 +351,7 @@ def add_df_to_map(
 # -dissolve2
 # -clean
 
-## Mapshaper commands to get a nice filtered local map
+# Mapshaper commands to get a nice filtered local map
 # -filter "!['01518', '01519','01517', '01367', '01695', '01696', '01697', '01698','01699', '01700','44322','35305','32528','32525','32526','32527','13421','13361','13362','13363','13364','13381','13382','13401','13402'].includes(N03_007)"
 # -clean
 # -filter-islands min-area 600km2
