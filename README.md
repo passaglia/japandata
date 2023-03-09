@@ -1,7 +1,6 @@
 # JapanData
 
 [![PyPI](https://img.shields.io/pypi/v/japandata?label=latest%20release)](https://pypi.org/project/japandata/)
-[![PyPI - License](https://img.shields.io/pypi/l/japandata)](https://github.com/passaglia/japandata/blob/main/LICENSE.md)
 
 **JapanData** is a python package which provides access to datasets about Japan. It includes:
 
