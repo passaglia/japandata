@@ -81,9 +81,9 @@ def fetch_map(map_date, scale, quality):
     return fetch_file(fname)
 
 
-##########################################
-######## Map Cleaning Functions ##########
-##########################################
+##########################################################
+######## Map Cleaning Functions for Stylization ##########
+##########################################################
 
 # TODO: add docstrings to these functions
 
@@ -189,7 +189,6 @@ def stylize(city_df):
 ######## Map Loading Functions ##########
 ##########################################
 
-# get the manifest file listing available maps
 manifest_file = fetch_manifest()
 AVAILABLE_MAPS = load_dict(manifest_file)
 AVAILABLE_DATES = [np.datetime64(date) for date in list(AVAILABLE_MAPS.keys())]
@@ -206,6 +205,7 @@ def load_map(date=2022, scale="jp_city_dc", quality="coarse"):
         geopandas dataframe: topojson map
     """
 
+    # allow for longhand quality arguments
     quality_arg_dict = {
         "stylized": "s",
         "coarse": "c",
@@ -245,7 +245,7 @@ def load_map(date=2022, scale="jp_city_dc", quality="coarse"):
 
     # check if desired map quality exists in manifest
     if quality not in AVAILABLE_MAPS[map_date][scale]:
-        # stylized charts can be regenerated from more detailed charts
+        # stylized charts can be generated from coarse charts
         if quality == "s":
             if scale == "jp_pref":
                 return join_cities(remove_islands(load_map(date, "jp_city_dc", "s")))
