@@ -1,7 +1,8 @@
 """
 maps/maps.py
 
-Module which fetches topojson maps of japan. Original data from https://geoshape.ex.nii.ac.jp/city/choropleth/
+Module which fetches topojson maps of japan. 
+Maps originally from https://geoshape.ex.nii.ac.jp/city/choropleth/
 
 Author: Sam Passaglia
 """
@@ -16,6 +17,7 @@ import pandas as pd
 from japandata.utils import load_dict
 
 CACHE_FOLDER = Path(os.path.dirname(__file__), "cache/")
+os.makedirs(CACHE_FOLDER, exist_ok=True)
 
 ###########################################
 ####### File fetching and caching  ########
@@ -34,6 +36,8 @@ def fetch_file(fname):
 
     cached = Path(CACHE_FOLDER, fname)
     if not cached.exists():
+        # recreate any required subdictories locally
+        cached.parent.mkdir(parents=True, exist_ok=True)
         from japandata.download import DOWNLOAD_INFO, download_progress
 
         url = DOWNLOAD_INFO["maps"]["latest"]["url"] + fname
@@ -194,6 +198,59 @@ AVAILABLE_MAPS = load_dict(manifest_file)
 AVAILABLE_DATES = [np.datetime64(date) for date in list(AVAILABLE_MAPS.keys())]
 
 
+def load_and_clean_map_file(map_file):
+    # cleaning the map files
+
+    map_df = gpd.read_file(map_file)
+    map_df.crs = "EPSG:6668"
+
+    # column headers are explained at https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-v2_2.html
+    map_df.rename(
+        columns={
+            "N03_001": "prefecture",
+            "N03_002": "bureau",
+            "N03_003": "county",
+            "N03_004": "city",
+            "N03_005": "founding_date",
+            "N03_006": "extinction_date",
+            "N03_007": "code",
+            "type": "special",
+        },
+        inplace=True,
+        errors="ignore",
+    )
+
+    # if scale == "jp_pref":
+    #     map_df.drop(
+    #         columns=[
+    #             "id",
+    #             "bureau",
+    #             "founding_date",
+    #             "extinction_date",
+    #             "city",
+    #             "county",
+    #         ],
+    #         errors="ignore",
+    #         inplace=True,
+    #     )
+
+    # if scale == "jp_city_dc":
+    #     map_df.loc[map_df["special"] == "designated-city", "city"] = map_df.loc[
+    #         map_df["special"] == "designated-city", "county"
+    #     ]
+
+    # if scale == "jp_city_dc" or "jp_city":
+    #     map_df.drop(columns=["id"], errors="ignore", inplace=True)
+
+    try:
+        map_df["prefecture"] = map_df["prefecture"].str.replace("沖繩", "沖縄")
+        map_df["id"] = map_df["prefecture"].str.replace("沖繩", "沖縄")
+    except KeyError:
+        pass
+
+    return map_df
+
+
 def load_map(date=2022, scale="jp_city_dc", quality="coarse"):
     """Load a map of japan at a given scale and quality.
     Args:
@@ -261,52 +318,7 @@ def load_map(date=2022, scale="jp_city_dc", quality="coarse"):
     # fetch map
     map_file = fetch_map(map_date, scale, quality)
 
-    map_df = gpd.read_file(map_file)
-    map_df.crs = "EPSG:6668"
-
-    # column headers are explained at https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-v2_2.html
-    map_df.rename(
-        columns={
-            "N03_001": "prefecture",
-            "N03_002": "bureau",
-            "N03_003": "county",
-            "N03_004": "city",
-            "N03_005": "founding_date",
-            "N03_006": "extinction_date",
-            "N03_007": "code",
-            "type": "special",
-        },
-        inplace=True,
-        errors="ignore",
-    )
-
-    if scale == "jp_pref":
-        map_df.drop(
-            columns=[
-                "id",
-                "bureau",
-                "founding_date",
-                "extinction_date",
-                "city",
-                "county",
-            ],
-            errors="ignore",
-            inplace=True,
-        )
-
-    if scale == "jp_city_dc":
-        map_df.loc[map_df["special"] == "designated-city", "city"] = map_df.loc[
-            map_df["special"] == "designated-city", "county"
-        ]
-
-    if scale == "jp_city_dc" or "jp_city":
-        map_df.drop(columns=["id"], errors="ignore", inplace=True)
-
-    try:
-        map_df["prefecture"] = map_df["prefecture"].str.replace("沖繩", "沖縄")
-        map_df["id"] = map_df["prefecture"].str.replace("沖繩", "沖縄")
-    except KeyError:
-        pass
+    map_df = load_and_clean_map_file(map_file)
 
     return map_df
 
