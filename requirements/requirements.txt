@@ -3,3 +3,5 @@ romkan
 jaconv
 geopandas
 pandas
+topojson
+shapely

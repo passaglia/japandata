@@ -1,4 +1,1 @@
-from .maps import load_map
-
-print("test")
-test_var = "test"
+from .maps import load_map, AVAILABLE_MAPS, AVAILABLE_DATES

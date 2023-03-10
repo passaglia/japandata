@@ -1,0 +1,10 @@
+{
+    "maps": {
+        "latest": {
+            "url": "https://raw.githubusercontent.com/passaglia/japandata-sources/main/maps/"
+        },
+        "0.5": {
+            "url": "https://raw.githubusercontent.com/passaglia/japandata-sources/main/maps/"
+        }
+    }
+}
