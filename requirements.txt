@@ -1,6 +1,0 @@
-matplotlib
-numpy
-romkan
-jaconv
-geopandas
-pandas

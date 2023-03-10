@@ -1,19 +1,19 @@
 # Data cache
 cache/
-furusatonouzeidata/
-chihoukoufuzeidata/
 populationdata/
 indicesdata/
 readingsdata/
-docs/
 *.parquet
 *.tar.gz
 
 # Distribution / packaging
-dist/
+venv
+dist
 build.sh
 build/
 *.egg-info/
+changelog.md
+notebooks/*_output
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
