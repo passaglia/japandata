@@ -29,7 +29,6 @@ from japandata.utils import load_dict
 
 from tqdm import tqdm
 
-# from yomikata.config import config, logger
 
 # DOWNLOAD_INFO_URL = (
 #     "https://raw.githubusercontent.com/passaglia/japandata/master/downloads.json"
@@ -47,15 +46,14 @@ from tqdm import tqdm
 #         )
 #     return r.json()
 
-
 # DOWNLOAD_INFO = get_json(DOWNLOAD_INFO_URL, "download info")
 
 DOWNLOAD_INFO_PATH = Path(Path(__file__).parent.parent.parent, "downloads.json")
 DOWNLOAD_INFO = load_dict(DOWNLOAD_INFO_PATH)
 
 
-# # This is used to show progress when downloading.
-# # see here: https://github.com/tqdm/tqdm#hooks-and-callbacks
+# This is used to show progress when downloading.
+# see here: https://github.com/tqdm/tqdm#hooks-and-callbacks
 class TqdmUpTo(tqdm):
     """Provides `update_to(n)` which uses `tqdm.update(delta_n)`."""
 
@@ -73,12 +71,12 @@ class TqdmUpTo(tqdm):
         self.update(b * bsize - self.n)  # will also set self.n = b * bsize
 
 
-# def download_file(url, fname):
-#     with requests.get(url, stream=True) as r:
-#         with open(fname, "wb") as f:
-#             shutil.copyfileobj(r.raw, f)
+def download_file(url, fname):
+    with requests.get(url, stream=True) as r:
+        with open(fname, "wb") as f:
+            shutil.copyfileobj(r.raw, f)
 
-#     return fname
+    return fname
 
 
 def download_progress(url, fname):

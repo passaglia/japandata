@@ -13,21 +13,21 @@
 
 ## japandata.maps 
 
-`japandata.maps.data` provides maps of Japan, its prefectures, and its municipalities, from 1920 to today. These maps are sourced from [Asanobu Kitamoto, ROIS-DS Center for Open Data in the Humanities](https://geoshape.ex.nii.ac.jp/city/choropleth/), and they are licensed CC BY-SA 4.0.  They take the form of geopandas dataframes containing topojson maps.
+`japandata.maps` provides topojson maps of Japan at the national, prefectural, or municipal level, from 1920 to today, at varying quality levels. For example,
 
 ```
-from japandata.maps.data import load_map
+from japandata.maps import load_map
 
-map_df = load_map(date, level, quality)
+prefecture_map = load_map(date=2022, scale='jp_pref', quality='coarse')
 ```
 
-`date` should be a date (e.g. `2015-04-31`) or a year (`2015`). Maps are available for a range of dates starting in 1920, and this function will return the most recent map available on or before `date` . Use the `japandata.maps.data.get_dates()` function to check the available dates.
+See `notebooks/maps.ipynb` for other options.
 
-`level` should be  `prefecture`, `local`, `local_dc`, or `japan`. `prefecture` yields a geopandas dataframe of Japan's prefectures, `local` a dataframe of its localities, `local_dc` a dataframe in which the localities making up [*designated cities*](https://en.wikipedia.org/wiki/Cities_designated_by_government_ordinance_of_Japan) are merged, and `japan` a dataframe containing a single geometry object of the whole of japan.
+Maps sourced from [Asanobu Kitamoto, ROIS-DS Center for Open Data in the Humanities](https://geoshape.ex.nii.ac.jp/city/choropleth/), licensed CC BY-SA 4.0. 
 
-`quality` should be one of `coarse`, `low`, `medium`, `high` and controls the geometrical detail of the map. For many purposes `coarse` is sufficient.
+<!-- TODO: Add a nice plot here  -->
 
-<!-- TODO: Update docs  -->
+<!-- TODO: Update docs below this point  -->
 ## japandata.population
 
 `japandata.population.data` provides data about the population and demographics of japan, at the national, prefectural, and municipal level, annually from 1967 to 2020. This information is sourced from the [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via the [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).

@@ -136,15 +136,15 @@ def join_cities(city_df):
     city_df = city_df.drop(["city", "bureau", "county", "code"], axis=1)
     prefs = []
     polygons = []
-    for prefecture in city_df["jp_pref"].unique():
+    for prefecture in city_df["prefecture"].unique():
         polygonlist = []
-        for geometry in city_df.loc[city_df["jp_pref"] == prefecture, "geometry"]:
+        for geometry in city_df.loc[city_df["prefecture"] == prefecture, "geometry"]:
             polygonlist.append(make_valid(geometry))
         polygons.append(unary_union(polygonlist))
         prefs.append(prefecture)
 
     pref_df = gpd.GeoDataFrame(
-        prefs, columns=["jp_pref"], geometry=polygons, crs=city_df.crs
+        prefs, columns=["prefecture"], geometry=polygons, crs=city_df.crs
     )
     return pref_df
 
@@ -321,11 +321,11 @@ def add_df_to_map(
     map_df = load_map(date, scale=scale, quality=quality)
     map_df = map_df.loc[~map_df["geometry"].is_empty]
     if scale == "jp_pref":
-        merge_tokens = ["jp_pref"]
+        merge_tokens = ["prefecture"]
     else:
         map_df = map_df.loc[~(map_df["code"].isnull())]
         map_df = map_df.drop_duplicates(subset="code")
-        merge_tokens = ["jp_pref", "code"]
+        merge_tokens = ["prefecture", "code"]
     merged_df = pd.merge(
         map_df,
         df,
