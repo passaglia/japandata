@@ -1,27 +1,28 @@
 """
 maps/maps.py
 
-Module which fetches topojson maps of japan. 
+Module which fetches topojson maps of japan.
 Maps originally from https://geoshape.ex.nii.ac.jp/city/choropleth/
 
 Author: Sam Passaglia
 """
 
 import os
-import urllib.request
 from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+
 from japandata.utils import load_dict
 
 CACHE_FOLDER = Path(os.path.dirname(__file__), "cache/")
 os.makedirs(CACHE_FOLDER, exist_ok=True)
 
-###########################################
-####### File fetching and caching  ########
-###########################################
+
+"""
+File fetching and caching
+"""
 
 
 def fetch_file(fname):
@@ -87,9 +88,9 @@ def fetch_map(map_date, scale, quality):
     return fetch_file(fname)
 
 
-##########################################################
-######## Map Cleaning Functions for Stylization ##########
-##########################################################
+""" 
+Map Cleaning Functions for Stylization
+"""
 
 # TODO: add docstrings to these functions
 
@@ -149,9 +150,7 @@ def join_cities(city_df):
         polygons.append(unary_union(polygonlist))
         prefs.append(prefecture)
 
-    pref_df = gpd.GeoDataFrame(
-        prefs, columns=["prefecture"], geometry=polygons, crs=city_df.crs
-    )
+    pref_df = gpd.GeoDataFrame(prefs, columns=["prefecture"], geometry=polygons, crs=city_df.crs)
     return pref_df
 
 
@@ -191,9 +190,10 @@ def stylize(city_df):
     return city_df
 
 
-##########################################
-######## Map Loading Functions ##########
-##########################################
+"""
+Map Loading Functions
+"""
+
 
 manifest_file = fetch_manifest()
 AVAILABLE_MAPS = load_dict(manifest_file)
@@ -222,6 +222,7 @@ def load_and_clean_map_file(map_file):
         errors="ignore",
     )
 
+    # maybe the following is not needed anymore -- forget why it was here in the first place
     # if scale == "jp_pref":
     #     map_df.drop(
     #         columns=[
@@ -284,9 +285,7 @@ def load_map(date=2022, scale="jp_city_dc", quality="coarse"):
         date = np.datetime64(str(date) + "-12-31")
 
     try:
-        map_date = str(
-            np.array(AVAILABLE_DATES)[np.where(date >= np.array(AVAILABLE_DATES))][-1]
-        )
+        map_date = str(np.array(AVAILABLE_DATES)[np.where(date >= np.array(AVAILABLE_DATES))][-1])
     except IndexError as e:
         raise Exception(f"date must be >= than {str(np.min(AVAILABLE_DATES))}") from e
 

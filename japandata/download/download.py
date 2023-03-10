@@ -17,18 +17,18 @@ The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 """
 
+import json
 import os
 import shutil
 import sys
 import tarfile
 from pathlib import Path
 from urllib.request import urlretrieve
-import json
-import requests
-from japandata.utils import load_dict
 
+import requests
 from tqdm import tqdm
 
+from japandata.utils import load_dict
 
 # DOWNLOAD_INFO_URL = (
 #     "https://raw.githubusercontent.com/passaglia/japandata/master/downloads.json"
