@@ -5,3 +5,4 @@ geopandas
 pandas
 topojson
 shapely
+tqdm

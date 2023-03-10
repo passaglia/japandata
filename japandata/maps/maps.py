@@ -34,10 +34,11 @@ def fetch_file(fname):
 
     cached = Path(CACHE_FOLDER, fname)
     if not cached.exists():
-        from japandata.download import DOWNLOAD_INFO
+        from japandata.download import DOWNLOAD_INFO, download_progress
 
-        url = DOWNLOAD_INFO["maps"]["latest"] + fname
-        urllib.request.urlretrieve(url, cached)
+        url = DOWNLOAD_INFO["maps"]["latest"]["url"] + fname
+        print(url)
+        download_progress(url, cached)
     return cached
 
 
@@ -64,17 +65,18 @@ def fetch_map(map_date, scale, quality):
         Path: cached map filepath
     """
 
-    extension_dict = {
-        "jp_city_dc": ".topojson",
-        "jp_city": ".topojson",
-        "jp_pref": ".topojson",
-        "jp": ".geojson",
-    }
+    if quality == "s":
+        extension = ".json"
+    else:
+        extension_dict = {
+            "jp_city_dc": ".topojson",
+            "jp_city": ".topojson",
+            "jp_pref": ".topojson",
+            "jp": ".geojson",
+        }
+        extension = extension_dict[scale]
 
-    fname = Path(
-        map_date.replace("-", ""),
-        scale + "." + quality + extension_dict[scale],
-    )
+    fname = map_date.replace("-", "") + "/" + scale + "." + quality + extension
 
     return fetch_file(fname)
 
@@ -173,7 +175,7 @@ def stylize(city_df):
     ).to_gdf()
     city_df["geometry"] = [
         shapely.geometry.MultiPolygon(
-            [P for P in geometry if P.area > 1000 * 1000]
+            [P for P in geometry.geoms if P.area > 1000 * 1000]
         )  # meters * meters
         for geometry in city_df["geometry"]
     ]

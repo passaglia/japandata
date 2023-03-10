@@ -27,7 +27,8 @@ import json
 import requests
 from japandata.utils import load_dict
 
-# from tqdm import tqdm
+from tqdm import tqdm
+
 # from yomikata.config import config, logger
 
 # DOWNLOAD_INFO_URL = (
@@ -55,21 +56,21 @@ DOWNLOAD_INFO = load_dict(DOWNLOAD_INFO_PATH)
 
 # # This is used to show progress when downloading.
 # # see here: https://github.com/tqdm/tqdm#hooks-and-callbacks
-# class TqdmUpTo(tqdm):
-#     """Provides `update_to(n)` which uses `tqdm.update(delta_n)`."""
+class TqdmUpTo(tqdm):
+    """Provides `update_to(n)` which uses `tqdm.update(delta_n)`."""
 
-#     def update_to(self, b=1, bsize=1, tsize=None):
-#         """
-#         b  : int, optional
-#             Number of blocks transferred so far [default: 1].
-#         bsize  : int, optional
-#             Size of each block (in tqdm units) [default: 1].
-#         tsize  : int, optional
-#             Total size (in tqdm units). If [default: None] remains unchanged.
-#         """
-#         if tsize is not None:
-#             self.total = tsize
-#         self.update(b * bsize - self.n)  # will also set self.n = b * bsize
+    def update_to(self, b=1, bsize=1, tsize=None):
+        """
+        b  : int, optional
+            Number of blocks transferred so far [default: 1].
+        bsize  : int, optional
+            Size of each block (in tqdm units) [default: 1].
+        tsize  : int, optional
+            Total size (in tqdm units). If [default: None] remains unchanged.
+        """
+        if tsize is not None:
+            self.total = tsize
+        self.update(b * bsize - self.n)  # will also set self.n = b * bsize
 
 
 # def download_file(url, fname):
@@ -80,14 +81,14 @@ DOWNLOAD_INFO = load_dict(DOWNLOAD_INFO_PATH)
 #     return fname
 
 
-# def download_progress(url, fname):
-#     """Download a file and show a progress bar."""
-#     with TqdmUpTo(
-#         unit="B", unit_scale=True, miniters=1, desc=url.split("/")[-1]
-#     ) as t:  # all optional kwargs
-#         urlretrieve(url, filename=fname, reporthook=t.update_to, data=None)
-#         t.total = t.n
-#     return fname
+def download_progress(url, fname):
+    """Download a file and show a progress bar."""
+    with TqdmUpTo(
+        unit="B", unit_scale=True, miniters=1, desc=url.split("/")[-1]
+    ) as t:  # all optional kwargs
+        urlretrieve(url, filename=fname, reporthook=t.update_to, data=None)
+        t.total = t.n
+    return fname
 
 
 # def download_and_clean(version, url):

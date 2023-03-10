@@ -26,14 +26,14 @@ venv:
 	python3 -m pip install pip setuptools wheel && \
 	python3 -m pip install -e .
 
-# Jupyter Venv
+# Add environment to jupyter
 jupytervenv:
 	source venv/bin/activate && \
 	pip install ipykernel && \
 	pip install jupyter && \
 	python -m ipykernel install --name venv --user
 
-# Jupyter
+# Launch jupyter
 jupyter:
 	source venv/bin/activate && \
 	jupyter lab
