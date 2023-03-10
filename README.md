@@ -1,8 +1,8 @@
-# JapanData
+# japandata
 
 [![PyPI](https://img.shields.io/pypi/v/japandata?label=latest%20release)](https://pypi.org/project/japandata/)
 
-**JapanData** is a python library that provides easy access to geographic data about Japan:
+**japandata** is a python library that provides easy access to geographic data about Japan:
 
 * [`japandata.maps`](#maps): Maps of Japan, its prefectures, and municipalities,
 * [`japandata.population`](#population): Population statistics,
