@@ -36,8 +36,10 @@ def fetch_file(fname):
 
     cached = Path(CACHE_FOLDER, fname)
     if not cached.exists():
-        # recreate any required subdictories locally
-        cached.parent.mkdir(parents=True, exist_ok=True)
+        cached.parent.mkdir(
+            parents=True, exist_ok=True
+        )  # recreate any required subdirectories locally
+
         from japandata.download import DOWNLOAD_INFO, download_progress
 
         url = DOWNLOAD_INFO["maps"]["latest"]["url"] + fname
