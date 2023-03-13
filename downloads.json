@@ -6,5 +6,13 @@
         "0.5": {
             "url": "https://raw.githubusercontent.com/passaglia/japandata-sources/main/maps/"
         }
+    },
+    "readings": {
+        "latest": {
+            "url": "https://github.com/passaglia/japandata-sources/raw/main/readings/R2_loss.xlsx"
+        },
+        "0.5": {
+            "url": "https://github.com/passaglia/japandata-sources/raw/main/readings/R2_loss.xlsx"
+        }
     }
 }

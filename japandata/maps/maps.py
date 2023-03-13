@@ -224,32 +224,18 @@ def load_and_clean_map_file(map_file):
         errors="ignore",
     )
 
-    # maybe the following is not needed anymore -- forget why it was here in the first place
-    # if scale == "jp_pref":
-    #     map_df.drop(
-    #         columns=[
-    #             "id",
-    #             "bureau",
-    #             "founding_date",
-    #             "extinction_date",
-    #             "city",
-    #             "county",
-    #         ],
-    #         errors="ignore",
-    #         inplace=True,
-    #     )
+    map_df.dropna(axis=1, how="all", inplace=True)
+    map_df.drop(columns=["id"], errors="ignore", inplace=True)
 
-    # if scale == "jp_city_dc":
-    #     map_df.loc[map_df["special"] == "designated-city", "city"] = map_df.loc[
-    #         map_df["special"] == "designated-city", "county"
-    #     ]
-
-    # if scale == "jp_city_dc" or "jp_city":
-    #     map_df.drop(columns=["id"], errors="ignore", inplace=True)
+    try:
+        map_df.loc[map_df["special"] == "designated-city", "city"] = map_df.loc[
+            map_df["special"] == "designated-city", "county"
+        ]
+    except KeyError:
+        pass
 
     try:
         map_df["prefecture"] = map_df["prefecture"].str.replace("沖繩", "沖縄")
-        map_df["id"] = map_df["prefecture"].str.replace("沖繩", "沖縄")
     except KeyError:
         pass
 
@@ -328,7 +314,7 @@ def load_map(date=2022, scale="jp_city_dc", quality="coarse"):
     return map_df
 
 
-# Helper function to add a df to a map
+# Helper function to merge a DataFrame to a map
 def add_df_to_map(
     df,
     date,

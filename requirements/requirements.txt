@@ -6,3 +6,4 @@ pandas
 topojson
 shapely
 tqdm
+openpyxl
