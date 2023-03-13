@@ -44,7 +44,6 @@ def fetch_file(fname):
         from japandata.download import DOWNLOAD_INFO, download_progress
 
         url = DOWNLOAD_INFO["maps"]["latest"]["url"] + fname
-        print(url)
         download_progress(url, cached)
     return cached
 
