@@ -1,8 +1,5 @@
 # Data cache
 cache/
-populationdata/
-indicesdata/
-readingsdata/
 *.parquet
 *.tar.gz
 
@@ -13,7 +10,9 @@ build.sh
 build/
 *.egg-info/
 changelog.md
-notebooks/*_output
+notebooks/*/ 
+notebooks/*.json
+notebooks/*.GeoJSON
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
