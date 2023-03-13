@@ -1,13 +1,12 @@
 """
 maps/maps.py
 
-Module which fetches topojson maps of japan.
-Maps originally from https://geoshape.ex.nii.ac.jp/city/choropleth/
+Module which provides topojson maps of japan.
+Maps from https://geoshape.ex.nii.ac.jp/city/choropleth/
 
 Author: Sam Passaglia
 """
 
-import os
 from pathlib import Path
 
 import geopandas as gpd
@@ -16,8 +15,7 @@ import pandas as pd
 
 from japandata.utils import load_dict
 
-CACHE_FOLDER = Path(os.path.dirname(__file__), "cache/")
-os.makedirs(CACHE_FOLDER, exist_ok=True)
+CACHE_FOLDER = Path(Path(__file__).parent, "cache/")
 
 
 """
@@ -54,7 +52,7 @@ def fetch_manifest():
     Returns:
         Path: cached manifest filepath
     """
-    ### TODO: We are caching the manifest, which prevents us from updating the manifest remotely without asking the user to clear cache or updating the package. In future could implement a check for a new manifest and update the cache if necessary.
+    # TODO: We are caching the manifest, which prevents us from updating the manifest remotely without asking the user to clear cache or updating the package. In future could implement a check for a new manifest and update the cache if necessary.
 
     return fetch_file("manifest.json")
 
@@ -88,7 +86,7 @@ def fetch_map(map_date, scale, quality):
     return fetch_file(fname)
 
 
-""" 
+"""
 Map Cleaning Functions for Stylization
 """
 
@@ -177,7 +175,7 @@ def stylize(city_df):
     city_df = city_df.loc[~(city_df["code"].isnull())]
     topojson = tp.Topology(city_df, prequantize=False)
     city_df = topojson.toposimplify(
-        1000,  ## this is in meters
+        1000,  # this is in meters
         prevent_oversimplify=False,
     ).to_gdf()
     city_df["geometry"] = [
@@ -263,7 +261,7 @@ def load_map(date=2022, scale="jp_city_dc", quality="coarse"):
     }
     try:
         quality = quality_arg_dict[quality]
-    except KeyError as e:
+    except KeyError:
         pass
 
     # determine the map date to use

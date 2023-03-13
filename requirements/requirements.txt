@@ -7,3 +7,5 @@ topojson
 shapely
 tqdm
 openpyxl
+xlrd
+pyarrow

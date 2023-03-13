@@ -1,1 +1,1 @@
-from .readings import city_names, pref_names
+from .readings import city_names, pref_names  # noqa: F401

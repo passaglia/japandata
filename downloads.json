@@ -14,5 +14,13 @@
         "0.5": {
             "url": "https://github.com/passaglia/japandata-sources/raw/main/readings/R2_loss.xlsx"
         }
+    },
+    "indices": {
+        "latest": {
+            "url": "https://github.com/passaglia/japandata-sources/raw/main/indices/indices.tar.gz"
+        },
+        "0.5": {
+            "url": "https://github.com/passaglia/japandata-sources/raw/main/indices/indices.tar.gz"
+        }
     }
 }

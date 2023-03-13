@@ -14,7 +14,6 @@ import pandas as pd
 ## Figure out the new datastructure for the load all pop piece
 ## Implement japanese and foreigner in age
 ## Implement in load all age piece
-## Make the plot for the mobility project
 
 DATA_URL = (
     "https://github.com/passaglia/japandata-sources/raw/main/population/populationdata.tar.gz"

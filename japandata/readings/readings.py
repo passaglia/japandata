@@ -1,23 +1,21 @@
 """
-readings/data.py
+readings/readings.py
 
-Module which provides readings for place names
+Module which provides readings for place names.
 
 Author: Sam Passaglia
 """
 
-import os
 from pathlib import Path
 
 import jaconv
 import pandas as pd
 import romkan
 
-CACHE_FOLDER = Path(os.path.dirname(__file__), "cache/")
-os.makedirs(CACHE_FOLDER, exist_ok=True)
+CACHE_FOLDER = Path(Path(__file__).parent, "cache/")
 
 
-def fetch_readings_file():
+def fetch_data():
     """Fetches and caches file
 
     Returns:
@@ -93,4 +91,4 @@ def load_readings_R2file(fpath):
     return df, prefecture_df
 
 
-city_names, pref_names = load_readings_R2file(fetch_readings_file())
+city_names, pref_names = load_readings_R2file(fetch_data())
