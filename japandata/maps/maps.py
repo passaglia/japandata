@@ -314,16 +314,24 @@ def load_map(date=2022, scale="jp_city_dc", quality="coarse"):
 
 # Helper function to merge a DataFrame to a map
 def add_df_to_map(
-    df, date, scale, quality="coarse", indicator=False, drop_df_overlap_keys=True
+    df,
+    date,
+    scale,
+    quality="coarse",
+    indicator=False,
+    drop_df_overlap_keys=True,
+    clean=False,
 ):
     map_df = load_map(date, scale, quality)
-    # map_df = map_df.loc[~map_df["geometry"].is_empty]
+    if clean:
+        map_df = map_df.loc[~map_df["geometry"].is_empty]
     if scale == "jp_pref":
         merge_tokens = ["prefecture"]
     else:
-        # map_df = map_df.loc[~(map_df["code"].isnull())]
-        # map_df = map_df.drop_duplicates(subset="code")
-        merge_tokens = ["prefecture", "city"]
+        if clean:
+            map_df = map_df.loc[~(map_df["code"].isnull())]
+            map_df = map_df.drop_duplicates(subset="code")
+        merge_tokens = ["prefecture", "code"]
     merged_df = pd.merge(
         map_df,
         df,
