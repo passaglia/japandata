@@ -52,7 +52,7 @@ def fetch_data():
 DATA_FOLDER = fetch_data()
 
 """
-Data Processing 
+Data Processing
 """
 
 
@@ -87,11 +87,11 @@ def load_year(year, scale="prefecture"):
             "regular-expense-rate",
             "debt-service-rate",
             "debt-restriction-rate",
-            "economic-strength-index",
+            "fiscal-strength-index",
         ]
     else:
         cols += [
-            "economic-strength-index",
+            "fiscal-strength-index",
             "regular-expense-rate",
             "debt-service-rate",
             "future-burden-rate",
@@ -129,7 +129,7 @@ def load_year(year, scale="prefecture"):
 
     if scale == "city":
         df.drop(df.loc[pd.isna(df["city"])].index, inplace=True)
-        df = df.replace({"\(": "", "\)": ""}, regex=True)
+        df = df.replace({r"\(": "", r"\)": ""}, regex=True)
 
     if scale == "city" and year >= 2011:
         df["code"] = df["code6digit"].apply(lambda s: s if pd.isna(s) else s[:-1])
@@ -144,7 +144,7 @@ def load_year(year, scale="prefecture"):
         "debt-restriction-rate",
         "regular-expense-rate",
         "debt-service-rate",
-        "economic-strength-index",
+        "fiscal-strength-index",
         "laspeyres-adjusted",
     ]
     for col in float_cols:
@@ -248,7 +248,7 @@ def load_all():
 
 
 """
-Loading and caching of the cleaned data 
+Loading and caching of the cleaned data
 """
 
 

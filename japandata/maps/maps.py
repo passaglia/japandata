@@ -314,31 +314,36 @@ def load_map(date=2022, scale="jp_city_dc", quality="coarse"):
 
 # Helper function to merge a DataFrame to a map
 def add_df_to_map(
-    df,
-    date,
-    scale,
-    quality="coarse",
+    df, date, scale, quality="coarse", indicator=False, drop_df_overlap_keys=True
 ):
-    map_df = load_map(date, scale=scale, quality=quality)
-    map_df = map_df.loc[~map_df["geometry"].is_empty]
+    map_df = load_map(date, scale, quality)
+    # map_df = map_df.loc[~map_df["geometry"].is_empty]
     if scale == "jp_pref":
         merge_tokens = ["prefecture"]
     else:
-        map_df = map_df.loc[~(map_df["code"].isnull())]
-        map_df = map_df.drop_duplicates(subset="code")
-        merge_tokens = ["prefecture", "code"]
+        # map_df = map_df.loc[~(map_df["code"].isnull())]
+        # map_df = map_df.drop_duplicates(subset="code")
+        merge_tokens = ["prefecture", "city"]
     merged_df = pd.merge(
         map_df,
         df,
         on=merge_tokens,
         how="left",
         suffixes=["", "_df"],
-        validate="one_to_one",
         indicator=True,
     )
     assert len(merged_df) == len(map_df)
 
     print(len(merged_df.loc[(merged_df["_merge"] == "left_only")]), "failures")
+
+    if not indicator:
+        merged_df = merged_df.drop(columns=["_merge"])
+
+    if drop_df_overlap_keys:
+        merged_df = merged_df.drop(
+            columns=[col for col in merged_df.columns if col.endswith("_df")],
+            errors="ignore",
+        )
 
     merged_df = gpd.GeoDataFrame(merged_df)
     return merged_df
