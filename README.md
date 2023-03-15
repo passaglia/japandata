@@ -15,7 +15,7 @@
 
 ## japandata.maps 
 
-`japandata.maps` provides topojson maps of Japan at the national, prefectural, or municipal level, from 1920 to today, at varying quality levels.
+`japandata.maps` provides topojson maps of Japan at the national, prefectural, or municipal level, from 1920 to today, at varying quality levels. These maps are sourced from [Asanobu Kitamoto, ROIS-DS Center for Open Data in the Humanities](https://geoshape.ex.nii.ac.jp/city/choropleth/) and licensed CC BY-SA 4.0.
 
 ```python
 from japandata.maps import load_map
@@ -23,33 +23,35 @@ from japandata.maps import load_map
 prefecture_map = load_map(date=2022, scale='jp_pref', quality='coarse')
 ```
 
-See `notebooks/maps.ipynb` for other options.
-
-Maps sourced from [Asanobu Kitamoto, ROIS-DS Center for Open Data in the Humanities](https://geoshape.ex.nii.ac.jp/city/choropleth/), licensed CC BY-SA 4.0.
+See `notebooks/maps.ipynb` to see the different types of maps that can be loaded and information about how to use them.
 
 ### japandata.readings
+
+`japandata.readings` provides kana and romaji pronunciation information for Japanese place names.
+
 
 ```python
 from japandata.readings import city_names, pref_names 
 ```
 
-These dataframes contain kana and romaji pronunciation information for Japanese place names.
+See `notebooks/readings.ipynb` for examples of how to integrate this information with the maps.
 
-<!-- TODO: Update docs below this point  -->
 
 
 ## japandata.indices 
 
-`japandata.indices.data` contains indices of the economic health of each municipality and prefecture in Japan. These indices are produced by the government for various purposes, such as to determine financial transfers between municipalities or to restrict municipal debt issuances. The data is provided by the [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken). It covers FY2005 to FY2020.
+`japandata.indices.data` contains fiscal health indices of municipal and prefectural governments. These indices span from FY2005 to FY2021 and are produced by the [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html). They are used to determine fiscal transfers between municipalities or to restrict municipal debt issuances. Licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken). 
 
 ```
-from japandata.indices.data import local_ind_df,  designatedcity_ind_df, capital_ind_df, pref_ind_df, prefmean_ind_df
+from japandata.indices import city, pref, prefmean
 ```
 
-`local_ind_df` is a dataframe containing the economic health indices for each local government of japan, with a separate row for each year and municipality. `designatedcity_ind_df` contains the indices for just the designated cities and `capital_ind_df` for just the prefectural capitals. `pref_ind_df` contains indices computed for each prefecture, while `prefmean_ind_df` contains the average of the indices for the local municipal indices within each prefecture.
+`city` contains the data about municipal governments, `pref` the data about prefectural governments, and `prefmean` contains weighted means of the municipal health indices grouped by prefecture. For the meaning of each index, see original data source. Be careful that the calculation method for some columns is different for the 23 special wards of Tokyo than for other municipal governments.
 
-A detailed explanation of each index is available in Japanese from the official data source above. Here is a rough summary in English.
+See `notebooks/indices.ipynb` for example uses of this dataset.
 
+
+<!-- 
 The `economic-strength-index` (財政力指数) shows the economic strength of a local government. It is the ratio of the standardized tax receipts (基準財政収入額 -- tax receipts times 0.75) to the standardized economic burden (基準財政需要額 -- an estimated cost required to provide government services), averaged over the past three years. If the economic strength index is greater than 1, the local government has an economic surplus and will transfer funds (地方交付税) to local governments with an economic strength index less than one.
 
 For the 23 special wards of Tokyo, which all pay transfer taxes to the rest of Japan, the value in this column is instead a different figure which is used to determine internal financial transfers between the wards (特別区財政調整交付金).
@@ -62,7 +64,9 @@ Available from 2008 (H20) and onwards, the `future-burden-rate` (将来負担比
 
 Prior to 2008, the `debt-restriction-rate` (起債制限比率) was used to regulate municipal debt issuances. It is similar to the `debt-service-rate` but computed slightly differently.
 
-The `laspeyres` index here measures the salary of municipal government employees relative to national government employees, controlling for educational history and seniority. A figure greater than 100 indicates municipal employees are being paid more than national employees.
+The `laspeyres` index here measures the salary of municipal government employees relative to national government employees, controlling for educational history and seniority. A figure greater than 100 indicates municipal employees are being paid more than national employees. -->
+
+<!-- TODO: Update docs below this point  -->
 
 ## japandata.population
 
