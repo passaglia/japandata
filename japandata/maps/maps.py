@@ -148,9 +148,7 @@ def join_cities(city_df):
         polygons.append(unary_union(polygonlist))
         prefs.append(prefecture)
 
-    pref_df = gpd.GeoDataFrame(
-        prefs, columns=["prefecture"], geometry=polygons, crs=city_df.crs
-    )
+    pref_df = gpd.GeoDataFrame(prefs, columns=["prefecture"], geometry=polygons, crs=city_df.crs)
     return pref_df
 
 
@@ -271,9 +269,7 @@ def load_map(date=2022, scale="jp_city_dc", quality="coarse"):
         date = np.datetime64(str(date) + "-12-31")
 
     try:
-        map_date = str(
-            np.array(AVAILABLE_DATES)[np.where(date >= np.array(AVAILABLE_DATES))][-1]
-        )
+        map_date = str(np.array(AVAILABLE_DATES)[np.where(date >= np.array(AVAILABLE_DATES))][-1])
     except IndexError as e:
         raise Exception(f"date must be >= than {str(np.min(AVAILABLE_DATES))}") from e
 

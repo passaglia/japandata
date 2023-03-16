@@ -5,8 +5,8 @@
 **japandata** is a python library that provides easy access to geographic data about Japan:
 
 * [`japandata.maps`](#maps): Maps of Japan, its prefectures, and municipalities,
-* [`japandata.population`](#population): Population statistics,
-* [`japandata.readings`](#readings): Kana and romaji readings of the names of Japanese municipalities and prefectures,
+* [`japandata.population`](#population): Demographic information,
+* [`japandata.readings`](#readings): Kana and romaji readings of place names,
 * [`japandata.indices`](#indices): Municipal economic health indicators.
 
 <!-- TODO: Add a nice plot here  -->
@@ -40,13 +40,13 @@ See `notebooks/readings.ipynb` for examples of how to integrate this information
 
 ## japandata.indices 
 
-`japandata.indices.data` contains fiscal health indices of municipal and prefectural governments. These indices span from FY2005 to FY2021 and are produced by the [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html). They are used to determine fiscal transfers between municipalities or to restrict municipal debt issuances. Licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken). 
+`japandata.indices.data` provides fiscal health indices for municipal and prefectural governments. These indices span from FY2005 to FY2021 and are produced by the [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html). They are used to determine fiscal transfers between municipalities or to restrict municipal debt issuances. Licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken). 
 
 ```
 from japandata.indices import city, pref, prefmean
 ```
 
-`city` contains the data about municipal governments, `pref` the data about prefectural governments, and `prefmean` contains weighted means of the municipal health indices grouped by prefecture. For the meaning of each index, see original data source. Be careful that the calculation method for some columns is different for the 23 special wards of Tokyo than for other municipal governments.
+`city` covers municipal governments, `pref` covers prefectural governments, and `prefmean` provides weighted means of the municipal health indices grouped by prefecture. See the original data source to understand the meaning of each index.
 
 See `notebooks/indices.ipynb` for example uses of this dataset.
 
@@ -70,7 +70,7 @@ The `laspeyres` index here measures the salary of municipal government employees
 
 ## japandata.population
 
-`japandata.population.data` provides data about the population and demographics of japan, at the national, prefectural, and municipal level, annually from 1967 to 2020. This information is sourced from the [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via the [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
+`japandata.population` provides demographics of japan, at the national, prefectural, and municipal level, annually from 1967 to 2020. This information is sourced from the [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via the [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
 
 
 ```

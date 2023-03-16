@@ -7,50 +7,56 @@ Author: Sam Passaglia
 """
 
 import os
+import tarfile
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-## Figure out the new datastructure for the load all pop piece
-## Implement japanese and foreigner in age
-## Implement in load all age piece
+CACHE_FOLDER = Path(Path(__file__).parent, "cache/")
 
-DATA_URL = (
-    "https://github.com/passaglia/japandata-sources/raw/main/population/populationdata.tar.gz"
-)
-DATA_FOLDER = os.path.join(os.path.dirname(__file__), "populationdata/")
+# Implement japanese and non-japanese in age
+# Implement in load all age piece
 
-JAPAN_POP_CACHE = os.path.join(os.path.dirname(__file__), "japan_pop.parquet")
-PREF_POP_CACHE = os.path.join(os.path.dirname(__file__), "pref_pop.parquet")
-LOCAL_POP_CACHE = os.path.join(os.path.dirname(__file__), "local_pop.parquet")
-
-JAPAN_AGE_CACHE = os.path.join(os.path.dirname(__file__), "japan_age.parquet")
-PREF_AGE_CACHE = os.path.join(os.path.dirname(__file__), "pref_age.parquet")
-LOCAL_AGE_CACHE = os.path.join(os.path.dirname(__file__), "local_age.parquet")
+"""
+Data fetching and caching
+"""
 
 
-def checkfordata():
-    return os.path.exists(DATA_FOLDER)
+def fetch_data():
+    """Fetches and caches data
+
+    Returns:
+        Path: cached filepath.
+    """
+
+    cached = Path(CACHE_FOLDER, "population/")
+    archive = Path(CACHE_FOLDER, "indices.tar.gz")
+    if not cached.exists():
+        cached.parent.mkdir(
+            parents=True, exist_ok=True
+        )  # recreate any required subdirectories cityly
+
+        from japandata.download import DOWNLOAD_INFO, download_progress
+
+        url = DOWNLOAD_INFO["population"]["latest"]["url"]
+        download_progress(url, archive)
+
+        with tarfile.open(archive, "r") as tf:
+            tf.extractall(cached.parent)
+        os.remove(archive)
+    return cached
 
 
-def getdata():
-    if checkfordata():
-        print("data already gotten")
-    else:
-        import tarfile
-        import urllib.request
+DATA_FOLDER = fetch_data()
 
-        ftpstream = urllib.request.urlopen(DATA_URL)
-        rawfile = tarfile.open(fileobj=ftpstream, mode="r|gz")
-        rawfile.extractall(os.path.dirname(__file__))
+"""
+"""
 
 
-def load_age_data(year, datalevel="prefecture"):
-    assert datalevel in ["prefecture", "local"]
-    if datalevel == "prefecture":
-        assert 1994 <= year <= 2022
-    elif datalevel == "local":
-        assert 1995 <= year <= 2022
+def load_age_year(year, datalevel="prefecture", poptype="resident"):
+    assert datalevel in ["prefecture", "city"]
+    assert poptype in ["resident", "japanese", "non-japanese"]
 
     fileextension = ".xls"
     skiprows = 2
@@ -60,7 +66,7 @@ def load_age_data(year, datalevel="prefecture"):
 
     forced_coltypes = {"code6digit": str, "prefecture": str}
     cols = ["code6digit", "prefecture"]
-    if datalevel == "local":
+    if datalevel == "city":
         cols += ["city"]
     cols += ["gender", "total-pop"]
     if year == 2005:
@@ -75,46 +81,62 @@ def load_age_data(year, datalevel="prefecture"):
         agebracketmin += 5
     cols += [">" + str(int(agebracketmax - 1))]
 
-    ## change the column order to make sure >99 is last
     if datalevel == "prefecture":
-        filelabel = str(year)[-2:] + "02"
-        if year >= 2013:
-            filelabel += "s"
+        if poptype == "resident":
+            filelabel = str(year)[-2:] + "02"
+            if year >= 2013:
+                filelabel += "s"
+        elif poptype == "japanese":
+            filelabel = str(year)[-2:] + "06n"
+        elif poptype == "non-japanese":
+            filelabel = str(year)[-2:] + "10g"
+
         df = pd.read_excel(
-            DATA_FOLDER + "tnen/" + filelabel + "tnen" + fileextension,
+            Path(DATA_FOLDER, "tnen", filelabel + "tnen" + fileextension),
             skiprows=skiprows,
             header=None,
             names=cols,
             dtype=forced_coltypes,
         )
-    elif datalevel == "local":
-        filelabel = str(year)[-2:] + "04"
-        if year >= 2013:
-            filelabel += "s"
+    elif datalevel == "city":
+        if poptype == "resident":
+            filelabel = str(year)[-2:] + "04"
+            if year >= 2013:
+                filelabel += "s"
+        elif poptype == "japanese":
+            filelabel = str(year)[-2:] + "08n"
+        elif poptype == "non-japanese":
+            filelabel = str(year)[-2:] + "12g"
         df = pd.read_excel(
-            DATA_FOLDER + "snen/" + filelabel + "snen" + fileextension,
+            Path(DATA_FOLDER, "snen", filelabel + "snen" + fileextension),
             skiprows=skiprows,
             header=None,
             names=cols,
             dtype=forced_coltypes,
         )
 
-    if year >= 2021:
+    if (year >= 2021) and (poptype != "japanese"):
         df = df[:-2]
 
-    if datalevel == "local":
+    if datalevel == "city":
         df["city"].replace("\x1f", np.nan, inplace=True)
         df["city"].replace("-", np.nan, inplace=True)
         df["city"] = df["city"].str.strip()
         df["city"] = df["city"].str.replace("*", "", regex=False)
         df["city"].replace("", np.nan, inplace=True)
 
+    df.loc[:, ~df.columns.isin(["city", "code"])] = df.loc[
+        :, ~df.columns.isin(["city", "code"])
+    ].fillna(0)
+
+    df = df.replace("X", 0)
+
     df["prefecture"] = df["prefecture"].str.strip()
     df["prefecture"] = df["prefecture"].str.replace("*", "", regex=False)
 
     df.loc[df["prefecture"] == "合計", "code6digit"] = np.nan
 
-    if datalevel == "local":
+    if datalevel == "city":
         df.loc[df["city"] == "島しょ", "code6digit"] = "133604"
         df.loc[df["city"] == "色丹郡色丹村", "code6digit"] = "016951"
         df.loc[df["city"] == "国後郡泊村", "code6digit"] = "016969"
@@ -126,14 +148,14 @@ def load_age_data(year, datalevel="prefecture"):
     if datalevel == "prefecture":
         df["code"] = df["code6digit"].apply(lambda s: s if pd.isna(s) else s[:2])
         df.drop(["code6digit"], inplace=True, axis=1)
-    if datalevel == "local":
+    if datalevel == "city":
         df["code"] = df["code6digit"].apply(lambda s: s if pd.isna(s) else s[:-1])
 
     if year == 2005:
         df = df.drop("total-pop-corrected", axis=1)
 
-    ##### SELF-CONSISTENCY TESTS ###
-    # This tests whether men+women = total
+    # SELF-CONSISTENCY TESTS #
+    # men+women = total?
     grouped = df.drop(
         ["code6digit", "prefecture", "city", "gender"],
         axis=1,
@@ -142,10 +164,12 @@ def load_age_data(year, datalevel="prefecture"):
 
     def testfunc(group):
         # print(group)
-        assert (group.iloc[0, :-1] == group.iloc[1, :-1] + group.iloc[2, :-1]).all()
+        assert (
+            group.iloc[0, :-1] == group.iloc[1, :-1] + group.iloc[2, :-1]
+        ).all()  # TODO this probably needs to be fixed
 
     grouped.apply(testfunc)
-    ##### SELF-CONSISTENCY TESTS ####
+    # SELF-CONSISTENCY TESTS #
 
     df["unknown"] = df["total-pop"] - df.drop(
         [
@@ -164,19 +188,48 @@ def load_age_data(year, datalevel="prefecture"):
 
     df["year"] = year
 
+    if poptype == "resident":
+        # before the 2013 table, residents means japanese
+        if year < 2013:
+            nationality = "japanese"
+        else:
+            nationality = "all"
+    else:
+        nationality = poptype
+
+    df["nationality"] = nationality
+
+    # Clean up column order
+    sorted_cols = ["year", "nationality"]
+    df = df.reindex(
+        columns=(sorted_cols + list([a for a in df.columns if a not in sorted_cols]))
+    )
+
+    # Clean up types
+    type_dict = {
+        col: int
+        for col in df.columns
+        if col
+        not in [
+            "year",
+            "gender",
+            "nationality",
+            "code6digit",
+            "code",
+            "prefecture",
+            "city",
+        ]
+    }
+    for key in type_dict.keys():
+        if key in df.columns:
+            df[key] = df[key].astype(type_dict[key])
+
     return df
 
 
-def load_pop_data(year, datalevel="prefecture", poptype="resident"):
-    assert datalevel in ["prefecture", "local"]
-    if datalevel == "prefecture":
-        assert 1968 <= year <= 2022
-    elif datalevel == "local":
-        assert 1995 <= year <= 2022
-
-    assert poptype in ["resident", "japanese", "foreigner"]
-    if poptype != "resident":
-        assert 2013 <= year
+def load_pop_year(year, datalevel="prefecture", poptype="resident"):
+    assert datalevel in ["prefecture", "city"]
+    assert poptype in ["resident", "japanese", "non-japanese"]
 
     fileextension = ".xls"
     skiprows = 4
@@ -184,10 +237,10 @@ def load_pop_data(year, datalevel="prefecture", poptype="resident"):
         fileextension = ".xlsx"
         skiprows = 6
 
-    forced_coltypes = {"code6digit": str, "prefecture": str}
+    forced_coltypes = {"code6digit": str, "prefecture": str, "city": str}
 
     cols = ["code6digit", "prefecture"]
-    if datalevel == "local":
+    if datalevel == "city":
         cols += ["city"]
     cols += ["men", "women", "total-pop"]
     if year == 2005:
@@ -200,27 +253,27 @@ def load_pop_data(year, datalevel="prefecture", poptype="resident"):
     if 1980 <= year:
         if 2013 <= year:
             cols += ["moved-in-domestic", "moved-in-international"]
-        cols += ["moved-in", "born"]
+        cols += ["moved-in", "births"]
         if poptype == "japanese":
             cols += ["naturalization", "other-in-other"]
-        if poptype == "foreigner":
+        if poptype == "non-japanese":
             if year == 2013:
                 cols += ["other-30-47"]
             cols += ["denaturalization", "other-in-other"]
         cols += ["other-in", "total-in"]
         if 2013 <= year:
             cols += ["moved-out-domestic", "moved-out-international"]
-        cols += ["moved-out", "died"]
+        cols += ["moved-out", "deaths"]
         if poptype == "japanese":
             cols += ["denaturalization", "other-out-other"]
-        if poptype == "foreigner":
+        if poptype == "non-japanese":
             cols += ["naturalization", "other-out-other"]
         cols += ["other-out", "total-out", "in-minus-out"]
         if 1994 <= year:
             cols += ["in-minus-out-rate"]
         cols += [
-            "born-minus-died",
-            "born-minus-died-rate",
+            "births-minus-deaths",
+            "births-minus-deaths-rate",
             "social-in-minus-social-out",
             "social-in-minus-social-out-rate",
         ]
@@ -232,26 +285,26 @@ def load_pop_data(year, datalevel="prefecture", poptype="resident"):
                 filelabel += "s"
         elif poptype == "japanese":
             filelabel = str(year)[-2:] + "05n"
-        elif poptype == "foreigner":
+        elif poptype == "non-japanese":
             filelabel = str(year)[-2:] + "09g"
         df = pd.read_excel(
-            DATA_FOLDER + "tjin/" + filelabel + "tjin" + fileextension,
+            Path(DATA_FOLDER, "tjin", filelabel + "tjin" + fileextension),
             skiprows=skiprows,
             header=None,
             names=cols,
             dtype=forced_coltypes,
         )
-    elif datalevel == "local":
+    elif datalevel == "city":
         if poptype == "resident":
             filelabel = str(year)[-2:] + "03"
             if year >= 2013:
                 filelabel += "s"
         elif poptype == "japanese":
             filelabel = str(year)[-2:] + "07n"
-        elif poptype == "foreigner":
+        elif poptype == "non-japanese":
             filelabel = str(year)[-2:] + "11g"
         df = pd.read_excel(
-            DATA_FOLDER + "sjin/" + filelabel + "sjin" + fileextension,
+            Path(DATA_FOLDER, "sjin", filelabel + "sjin" + fileextension),
             skiprows=skiprows,
             header=None,
             names=cols,
@@ -263,7 +316,7 @@ def load_pop_data(year, datalevel="prefecture", poptype="resident"):
             "total-pop-corrected",
             "households-corrected",
             "in-minus-out-rate",
-            "born-minus-died-rate",
+            "births-minus-deaths-rate",
             "social-in-minus-social-out-rate",
         ],
         axis=1,
@@ -273,15 +326,13 @@ def load_pop_data(year, datalevel="prefecture", poptype="resident"):
     if year >= 2021:
         df = df[:-1]
 
-    if datalevel == "local":
-        df["city"].replace("\x1f", np.nan, inplace=True)
-        df["city"].replace("-", np.nan, inplace=True)
-        df["city"] = df["city"].str.strip()
-
     df["prefecture"] = df["prefecture"].str.strip()
     df.loc[df["prefecture"] == "合計", "code6digit"] = np.nan
 
-    if datalevel == "local":
+    if datalevel == "city":
+        df["city"].replace("\x1f", np.nan, inplace=True)
+        df["city"].replace("-", np.nan, inplace=True)
+        df["city"] = df["city"].str.strip()
         df.loc[df["city"] == "島しょ", "code6digit"] = "133604"
         df.loc[df["city"] == "色丹郡色丹村", "code6digit"] = "016951"
         df.loc[df["city"] == "国後郡泊村", "code6digit"] = "016969"
@@ -293,24 +344,30 @@ def load_pop_data(year, datalevel="prefecture", poptype="resident"):
     if datalevel == "prefecture":
         df["code"] = df["code6digit"].apply(lambda s: s if pd.isna(s) else s[:2])
         df.drop(["code6digit"], inplace=True, axis=1)
-    if datalevel == "local":
+    if datalevel == "city":
         df["code"] = df["code6digit"].apply(lambda s: s if pd.isna(s) else s[:-1])
 
-    ##### SELF-CONSISTENCY TESTS ####
+    # SELF-CONSISTENCY TESTS #
     assert (df["men"] + df["women"] == df["total-pop"]).all()
     if year >= 1980:
-        assert (df["moved-in"] + df["born"] + df["other-in"] == df["total-in"]).all()
-        if year != 1996 and datalevel != "local":
-            assert (df["moved-out"] + df["died"] + df["other-out"] == df["total-out"]).all()
+        assert (df["moved-in"] + df["births"] + df["other-in"] == df["total-in"]).all()
+        if year != 1996 and datalevel != "city":
+            assert (
+                df["moved-out"] + df["deaths"] + df["other-out"] == df["total-out"]
+            ).all()
         assert (df["total-in"] - df["total-out"] == df["in-minus-out"]).all()
-        assert (df["born"] - df["died"] == df["born-minus-died"]).all()
+        assert (df["births"] - df["deaths"] == df["births-minus-deaths"]).all()
         assert (
             df["moved-in"] + df["other-in"] - df["moved-out"] - df["other-out"]
             == df["social-in-minus-social-out"]
         ).all()
     if year >= 2013:
-        assert (df["moved-in-domestic"] + df["moved-in-international"] == df["moved-in"]).all()
-        assert (df["moved-out-domestic"] + df["moved-out-international"] == df["moved-out"]).all()
+        assert (
+            df["moved-in-domestic"] + df["moved-in-international"] == df["moved-in"]
+        ).all()
+        assert (
+            df["moved-out-domestic"] + df["moved-out-international"] == df["moved-out"]
+        ).all()
     if datalevel == "prefecture":
         assert (
             df.drop(df.loc[df["prefecture"] == "合計"].index)
@@ -337,19 +394,53 @@ def load_pop_data(year, datalevel="prefecture", poptype="resident"):
             )
             .values
         ).all()
-    ##### SELF-CONSISTENCY TESTS ####
+    # SELF-CONSISTENCY TESTS #
 
     df["year"] = year
+    if poptype == "resident":
+        # before the 2013 table, residents means japanese
+        if year < 2013:
+            nationality = "japanese"
+        else:
+            nationality = "all"
+    else:
+        nationality = poptype
+
+    df["nationality"] = nationality
+
+    # Clean up column order
+    sorted_cols = ["year", "nationality"]
+    df = df.reindex(
+        columns=(sorted_cols + list([a for a in df.columns if a not in sorted_cols]))
+    )
+
+    # Clean up types
+    type_dict = {
+        col: int
+        for col in df.columns
+        if col
+        not in [
+            "year",
+            "nationality",
+            "code6digit",
+            "code",
+            "prefecture",
+            "city",
+        ]
+    }
+    for key in type_dict.keys():
+        if key in df.columns:
+            df[key] = df[key].astype(type_dict[key])
 
     return df
 
 
-def generate_pop_dfs():
-    poptypes = ["resident", "japanese", "foreigner"]
+def load_pop():
+    poptypes = ["resident", "japanese", "non-japanese"]
 
     complete_japan_df = pd.DataFrame()
     complete_pref_df = pd.DataFrame()
-    complete_local_df = pd.DataFrame()
+    complete_city_df = pd.DataFrame()
 
     for poptype in poptypes:
         print(poptype)
@@ -360,33 +451,40 @@ def generate_pop_dfs():
 
         japan_df = pd.DataFrame()
         pref_df = pd.DataFrame()
-        local_df = pd.DataFrame()
+        city_df = pd.DataFrame()
         for year in years:
             print(year)
-            pref_df_year = load_pop_data(year, poptype=poptype, datalevel="prefecture")
+            pref_df_year = load_pop_year(year, poptype=poptype, datalevel="prefecture")
             japan_df_year = (
                 pref_df_year[pref_df_year["prefecture"] == "合計"]
                 .copy()
-                .drop(["prefecture", "code"], axis=1)
+                .drop(
+                    ["prefecture", "code"],
+                    axis=1,
+                    errors="ignore",
+                )
             )
-            japan_df = pd.concat([japan_df, japan_df_year], ignore_index=True)
             pref_df_year.drop(
                 pref_df_year.loc[pref_df_year["prefecture"] == "合計"].index, inplace=True
             )
+
+            japan_df = pd.concat([japan_df, japan_df_year], ignore_index=True)
             pref_df = pd.concat([pref_df, pref_df_year], ignore_index=True)
 
             if year >= 1995:
-                local_df_year = load_pop_data(year, poptype=poptype, datalevel="local")
+                city_df_year = load_pop_year(year, poptype=poptype, datalevel="city")
 
-                ### the summary rows of the local table
-                local_df_year_prefrows = (
-                    local_df_year.loc[pd.isna(local_df_year["city"])]
+                # the summary rows of the city table
+                city_df_year_prefrows = (
+                    city_df_year.loc[pd.isna(city_df_year["city"])]
                     .drop(["city", "code", "code6digit", "prefecture"], axis=1)
                     .reset_index(drop=True)
                 )
-                ### checking consistency of the japan table and the local table
-                assert (japan_df_year.values == local_df_year_prefrows.iloc[0].values).all()
-                ### checking consistency of the prefecture table and the local table
+                # checking consistency of the japan table and the city table
+                assert (
+                    japan_df_year.values == city_df_year_prefrows.iloc[0].values
+                ).all()
+                # checking consistency of the prefecture table and the city table
                 assert (
                     pref_df_year.drop(
                         [
@@ -395,129 +493,168 @@ def generate_pop_dfs():
                         ],
                         axis=1,
                     ).values
-                    == local_df_year_prefrows.iloc[1:].values
+                    == city_df_year_prefrows.iloc[1:].values
                 ).all()
 
-                ## dropping the summary rows
-                local_df_year = local_df_year.loc[~pd.isna(local_df_year["city"])]
+                # dropping the summary rows
+                city_df_year = city_df_year.loc[~pd.isna(city_df_year["city"])]
 
-                local_df = pd.concat([local_df, local_df_year], ignore_index=True)
-
-        japan_df["poptype"] = poptype
-        pref_df["poptype"] = poptype
-        local_df["poptype"] = poptype
+                city_df = pd.concat([city_df, city_df_year], ignore_index=True)
 
         complete_japan_df = pd.concat([complete_japan_df, japan_df], ignore_index=True)
         complete_pref_df = pd.concat([complete_pref_df, pref_df], ignore_index=True)
-        complete_local_df = pd.concat([complete_local_df, local_df], ignore_index=True)
+        complete_city_df = pd.concat([complete_city_df, city_df], ignore_index=True)
 
-    # The years above are actually the value at the end of the previous fiscal year. Here we make it the value at the end of the current fiscal year so that population flows within a given year are now assigned correctly.
+    # dropping columns that I don't have confidence in
+    complete_japan_df = complete_japan_df.drop(
+        [
+            "moved-in",
+            "other-in",
+            "total-in",
+            "moved-out",
+            "other-out",
+            "total-out",
+            "in-minus-out",
+            "moved-in-domestic",
+            "moved-out-domestic",
+            "moved-in-international",
+            "moved-out-international",
+            "naturalization",
+            "other-in-other",
+            "denaturalization",
+            "other-out-other",
+            "other-30-47",
+        ],
+        axis=1,
+    )
 
+    # Until now, population in a given year means the value at the beginning of the year and the population flows are the flows in the previous year.
+    # Here we subtract 1 and so we have the population at the end of the year and the flows in the year.
     complete_japan_df["year"] = complete_japan_df["year"] - 1
     complete_pref_df["year"] = complete_pref_df["year"] - 1
-    complete_local_df["year"] = complete_local_df["year"] - 1
+    complete_city_df["year"] = complete_city_df["year"] - 1
 
-    return complete_japan_df, complete_pref_df, complete_local_df
+    return complete_japan_df, complete_pref_df, complete_city_df
 
 
-def clean_age_data():
-    years = np.arange(1994, 2023)
-    df_japan_age_list = []
-    df_pref_age_list = []
-    df_local_age_list = []
-    for year in years:
-        print(year)
-        df_pref_age = load_age_data(year, datalevel="prefecture")
-        df_japan_age = (
-            df_pref_age[df_pref_age["prefecture"] == "合計"]
-            .copy()
-            .reset_index(drop=True)
-            .drop(["code", "prefecture"], axis=1)
-        )
-        df_japan_age_list.append(df_japan_age)
-        df_pref_age = df_pref_age.set_index("prefecture").drop("合計").reset_index()
-        df_pref_age_list.append(df_pref_age)
+def load_age():
 
-        if year >= 1995:
-            df_local_age = load_age_data(year, datalevel="local")
+    poptypes = ["resident", "japanese", "non-japanese"]
 
-            ### checking consistency of the summary rows of the local table with the summary table
-            df_local_age_pref = df_local_age.loc[pd.isna(df_local_age["city"])]
-            df_local_age_pref.reset_index(inplace=True, drop=True)
-            ### checking consistency of the japan table and the local table
-            assert (
-                df_japan_age.drop(["gender"], axis=1, errors="ignore").values
-                == df_local_age_pref.drop(
-                    [
-                        "prefecture",
-                        "city",
-                        "code",
-                        "code6digit",
-                        "gender",
-                    ],
-                    axis=1,
-                    errors="ignore",
+    complete_japan_df = pd.DataFrame()
+    complete_pref_df = pd.DataFrame()
+    complete_city_df = pd.DataFrame()
+
+    for poptype in poptypes:
+        print(poptype)
+        if poptype == "resident":
+            years = np.arange(1994, 2023)
+        else:
+            years = np.arange(2013, 2023)
+
+        japan_df = pd.DataFrame()
+        pref_df = pd.DataFrame()
+        city_df = pd.DataFrame()
+        for year in years:
+            print(year)
+            pref_df_year = load_age_year(year, poptype=poptype, datalevel="prefecture")
+            japan_df_year = (
+                pref_df_year[pref_df_year["prefecture"] == "合計"]
+                .copy()
+                .reset_index(drop=True)
+                .drop(["code", "prefecture"], axis=1)
+            )
+            pref_df_year.drop(
+                pref_df_year.loc[pref_df_year["prefecture"] == "合計"].index, inplace=True
+            )
+
+            japan_df = pd.concat([japan_df, japan_df_year], ignore_index=True)
+            pref_df = pd.concat([pref_df, pref_df_year], ignore_index=True)
+
+            if year >= 1995:
+                city_df_year = load_age_year(year, poptype=poptype, datalevel="city")
+
+                # the summary rows of the city table
+                city_df_year_prefrows = (
+                    city_df_year.loc[pd.isna(city_df_year["city"])]
+                    .drop(["city", "code", "code6digit", "prefecture"], axis=1)
+                    .reset_index(drop=True)
                 )
-                .iloc[0:3]
-                .values
-            ).all()
-            ### checking consistency of the prefecture table and the local table
-            assert (
-                df_pref_age.drop(
-                    ["code", "gender", "prefecture"],
-                    axis=1,
-                    errors="ignore",
-                ).values
-                == df_local_age_pref.drop(
-                    [
-                        "prefecture",
-                        "city",
-                        "code",
-                        "gender",
-                        "code6digit",
-                    ],
-                    axis=1,
-                    errors="ignore",
-                )
-                .iloc[3:]
-                .values
-            ).all()
 
-            # dropping the summary rows
-            df_local_age = df_local_age.loc[~pd.isna(df_local_age["city"])]
-            df_local_age_list.append(df_local_age)
+                # checking consistency of the japan table and the city table
+                assert (
+                    japan_df_year.values == city_df_year_prefrows.iloc[0:3].values
+                ).all()
 
-    japan_age_df = pd.concat(df_japan_age_list).reset_index(drop=True)
-    pref_age_df = pd.concat(df_pref_age_list).reset_index(drop=True)
-    local_age_df = pd.concat(df_local_age_list).reset_index(drop=True)
+                # checking consistency of the prefecture table and the city table
+                assert (
+                    pref_df_year.drop(
+                        [
+                            "code",
+                            "prefecture",
+                        ],
+                        axis=1,
+                    ).values
+                    == city_df_year_prefrows.iloc[3:].values
+                ).all()
 
-    # The years above are actually the value at the end of the previous fiscal year. Here we make it the value at the end of the current fiscal year so that population flows within a given year are assigned correctly.
-    japan_age_df["year"] = japan_age_df["year"] - 1
-    pref_age_df["year"] = pref_age_df["year"] - 1
-    local_age_df["year"] = local_age_df["year"] - 1
+                # dropping the summary rows
+                city_df_year = city_df_year.loc[~pd.isna(city_df_year["city"])]
 
-    return japan_age_df, pref_age_df, local_age_df
+                city_df = pd.concat([city_df, city_df_year], ignore_index=True)
+
+        complete_japan_df = pd.concat([complete_japan_df, japan_df], ignore_index=True)
+        complete_pref_df = pd.concat([complete_pref_df, pref_df], ignore_index=True)
+        complete_city_df = pd.concat([complete_city_df, city_df], ignore_index=True)
+
+    # Until now, population in a given year means the value at the beginning of the year and the population flows are the flows in the previous year.
+    # Here we subtract 1 and so we have the population at the end of the year and the flows in the year.
+    complete_japan_df["year"] = complete_japan_df["year"] - 1
+    complete_pref_df["year"] = complete_pref_df["year"] - 1
+    complete_city_df["year"] = complete_city_df["year"] - 1
+
+    return complete_japan_df, complete_pref_df, complete_city_df
 
 
-try:
-    japan_pop_df = pd.read_parquet(JAPAN_POP_CACHE)
-    prefecture_pop_df = pd.read_parquet(PREF_POP_CACHE)
-    local_pop_df = pd.read_parquet(LOCAL_POP_CACHE)
+"""
+Loading and caching of the cleaned data
+"""
 
-    japan_age_df = pd.read_parquet(JAPAN_AGE_CACHE)
-    prefecture_age_df = pd.read_parquet(PREF_AGE_CACHE)
-    local_age_df = pd.read_parquet(LOCAL_AGE_CACHE)
-except FileNotFoundError:
-    if not checkfordata():
-        getdata()
-    japan_pop_df, prefecture_pop_df, local_pop_df = generate_pop_dfs()
-    japan_pop_df.to_parquet(JAPAN_POP_CACHE)
-    prefecture_pop_df.to_parquet(PREF_POP_CACHE)
-    local_pop_df.to_parquet(LOCAL_POP_CACHE)
 
-    japan_age_df, prefecture_age_df, local_age_df = clean_age_data()
-    japan_age_df.to_parquet(JAPAN_AGE_CACHE)
-    prefecture_age_df.to_parquet(PREF_AGE_CACHE)
-    local_age_df.to_parquet(LOCAL_AGE_CACHE)
+def fetch_dataframes():
+    JAPAN_POP_CACHE = Path(CACHE_FOLDER, "japan_pop.parquet")
+    JAPAN_AGE_CACHE = Path(CACHE_FOLDER, "japan_age.parquet")
+    PREF_POP_CACHE = Path(CACHE_FOLDER, "pref_pop.parquet")
+    PREF_AGE_CACHE = Path(CACHE_FOLDER, "pref_age.parquet")
+    CITY_POP_CACHE = Path(CACHE_FOLDER, "city_pop.parquet")
+    CITY_AGE_CACHE = Path(CACHE_FOLDER, "city_age.parquet")
 
-# Be careful -- local pop df contains duplicates (i.e. a municipality and its subcomponents)
+    if not (
+        JAPAN_POP_CACHE.exists()
+        and JAPAN_AGE_CACHE.exists()
+        and PREF_POP_CACHE.exists()
+        and PREF_AGE_CACHE.exists()
+        and CITY_POP_CACHE.exists()
+        and CITY_AGE_CACHE.exists()
+    ):
+        japan_age, pref_age, city_age = load_age()
+        japan_pop, pref_pop, city_pop = load_pop()
+
+        japan_pop.to_parquet(JAPAN_POP_CACHE)
+        japan_age.to_parquet(JAPAN_AGE_CACHE)
+        pref_pop.to_parquet(PREF_POP_CACHE)
+        pref_age.to_parquet(PREF_AGE_CACHE)
+        city_pop.to_parquet(CITY_POP_CACHE)
+        city_age.to_parquet(CITY_AGE_CACHE)
+
+    japan_pop = pd.read_parquet(JAPAN_POP_CACHE)
+    japan_age = pd.read_parquet(JAPAN_AGE_CACHE)
+    pref_pop = pd.read_parquet(PREF_POP_CACHE)
+    pref_age = pd.read_parquet(PREF_AGE_CACHE)
+    city_pop = pd.read_parquet(CITY_POP_CACHE)
+    city_age = pd.read_parquet(CITY_AGE_CACHE)
+
+    return japan_pop, japan_age, pref_pop, pref_age, city_pop, city_age
+
+
+japan_pop, japan_age, pref_pop, pref_age, city_pop, city_age = fetch_dataframes()

@@ -22,5 +22,13 @@
         "0.5": {
             "url": "https://github.com/passaglia/japandata-sources/raw/main/indices/indices.tar.gz"
         }
+    },
+    "population": {
+        "latest": {
+            "url": "https://github.com/passaglia/japandata-sources/raw/main/population/population.tar.gz"
+        },
+        "0.5": {
+            "url": "https://github.com/passaglia/japandata-sources/raw/main/population/population.tar.gz"
+        }
     }
 }
