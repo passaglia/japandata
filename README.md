@@ -23,9 +23,8 @@ prefecture_map = load_map(date=2022, scale='jp_pref', quality='coarse')
 
 See `notebooks/maps.ipynb` to understand the different types of maps that can be loaded.
 
-Source: [Asanobu Kitamoto, ROIS-DS Center for Open Data in the Humanities](https://geoshape.ex.nii.ac.jp/city/choropleth/)
-
-License: CC BY-SA 4.0
+- Source: [Asanobu Kitamoto, ROIS-DS Center for Open Data in the Humanities](https://geoshape.ex.nii.ac.jp/city/choropleth/)
+- License: CC BY-SA 4.0
 
 
 ## japandata.population
@@ -42,9 +41,8 @@ from japandata.population.data import japan_pop, pref_pop, city_pop,
 
 See `notebooks/population.ipynb` for example uses of this dataset.
 
-Source: [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591)
-
-License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken)
+- Source: [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591)
+- License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken)
 
 ## japandata.indices
 
@@ -58,9 +56,8 @@ from japandata.indices import city, pref, prefmean
 
 See `notebooks/indices.ipynb` for example uses of this dataset.
 
-Source: [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html)
-
-License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken)
+- Source: [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html)
+- License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken)
 
 ### japandata.readings
 
