@@ -13,7 +13,7 @@
 
 ## japandata.maps 
 
-`japandata.maps` provides topojson maps of Japan at the national, prefectural, or municipal level, from 1920 to today, at varying quality levels. These maps are sourced from [Asanobu Kitamoto, ROIS-DS Center for Open Data in the Humanities](https://geoshape.ex.nii.ac.jp/city/choropleth/) and licensed CC BY-SA 4.0.
+`japandata.maps` provides national, prefectural, and municipal topojson maps from 1920 to today.
 
 ```python
 from japandata.maps import load_map
@@ -23,30 +23,49 @@ prefecture_map = load_map(date=2022, scale='jp_pref', quality='coarse')
 
 See `notebooks/maps.ipynb` to understand the different types of maps that can be loaded.
 
-### japandata.readings
+Source: [Asanobu Kitamoto, ROIS-DS Center for Open Data in the Humanities](https://geoshape.ex.nii.ac.jp/city/choropleth/)
+License: CC BY-SA 4.0.
 
-`japandata.readings` provides kana and romaji pronunciation information for Japanese place names.
 
+## japandata.population
 
-```python
-from japandata.readings import city_names, pref_names 
+`japandata.population` provides national, prefectural, and municipal demographic data annually from 1967.
+
+```
+from japandata.population.data import japan_pop, pref_pop, city_pop,
+                                      japan_age, pref_age, city_age
 ```
 
-See `notebooks/readings.ipynb` for code to integrate this information with the maps.
+* `japan_pop`, `pref_pop`, `city_pop`: Contain total population, # of men and women, # of households, # of births, # deaths, and # migrations, for Japanese and non-Japanese residents.
+* `japan_age`, `pref_age`, `city_age`: Contain age distributions split by gender for Japanese and non-Japanese residents.
 
+See `notebooks/population.ipynb` for example uses of this dataset.
+
+Source: [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591).
+License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
+
+<!-- #### TODO
+
+-- Show how to compute fertility rate
+
+-- Show how to compute working population: 15-64
+
+-->
 
 ## japandata.indices 
 
-`japandata.indices.data` provides fiscal health indices for municipal and prefectural governments. These indices span from FY2005 to FY2021 and are produced by the [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html). They are used to determine fiscal transfers between municipalities or to restrict municipal debt issuances. Licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken). 
+`japandata.indices.data` provides fiscal health indices for municipal and prefectural governments annually from 2005. These indices are used to e.g. determine fiscal transfers between municipalities.
 
-```
+```python
 from japandata.indices import city, pref, prefmean
 ```
 
-`city` covers municipal governments, `pref` covers prefectural governments, and `prefmean` provides weighted means of the municipal health indices grouped by prefecture. See the original data source to understand the meaning of each index.
+`city` covers municipal governments, `pref` covers prefectural governments, and `prefmean` provides weighted means of municipal indices grouped by prefecture.
 
 See `notebooks/indices.ipynb` for example uses of this dataset.
 
+Source: [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html).
+License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
 
 <!-- 
 The `economic-strength-index` (財政力指数) shows the economic strength of a local government. It is the ratio of the standardized tax receipts (基準財政収入額 -- tax receipts times 0.75) to the standardized economic burden (基準財政需要額 -- an estimated cost required to provide government services), averaged over the past three years. If the economic strength index is greater than 1, the local government has an economic surplus and will transfer funds (地方交付税) to local governments with an economic strength index less than one.
@@ -63,29 +82,19 @@ Prior to 2008, the `debt-restriction-rate` (起債制限比率) was used to regu
 
 The `laspeyres` index here measures the salary of municipal government employees relative to national government employees, controlling for educational history and seniority. A figure greater than 100 indicates municipal employees are being paid more than national employees. -->
 
-<!-- TODO: Update docs below this point  -->
-
-## japandata.population
-
-`japandata.population` provides annual demographic data at the national, prefectural, and municipal level. This data is from the [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via the [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
 
 
+### japandata.readings
+
+`japandata.readings` provides kana and romaji pronunciation information for Japanese place names.
+
+
+```python
+from japandata.readings import city_names, pref_names
 ```
-from japandata.population.data import japan_pop, japan_age, pref_pop, pref_age, city_pop, city_age
-```
 
-* `japan_pop`, `pref_pop`, `city_pop`: Contain total population, # of men and women, # of households, # of births, # deaths, and # migrations, for Japanese and non-Japanese residents.
-* `japan_age`, `pref_age`, `city_age`: Contain age distributions split by gender for Japanese and non-Japanese residents.
+See `notebooks/readings.ipynb` for code to integrate this information with the maps.
 
-See `notebooks/population.ipynb` for example uses of this dataset.
-
-<!-- #### TODO
-
--- Show how to compute fertility rate
-
--- Show how to compute working population: 15-64
-
--->
 
 # Installation
 
