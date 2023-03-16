@@ -8,6 +8,7 @@ venv
 dist
 build.sh
 build/
+ignore/
 *.egg-info/
 changelog.md
 notebooks/*/ 
