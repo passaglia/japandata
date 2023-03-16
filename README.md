@@ -2,12 +2,12 @@
 
 [![PyPI](https://img.shields.io/pypi/v/japandata?label=latest%20release)](https://pypi.org/project/japandata/)
 
-**japandata** is a python library that provides easy access to geographic data about Japan:
+**japandata** is a python library that provides easy access to detailed geographic data about Japan:
 
 * [`japandata.maps`](#maps): Maps of Japan, its prefectures, and municipalities,
-* [`japandata.population`](#population): Demographic information,
-* [`japandata.readings`](#readings): Kana and romaji readings of place names,
-* [`japandata.indices`](#indices): Municipal economic health indicators.
+* [`japandata.population`](#population): Demographic data,
+* [`japandata.indices`](#indices): Economic health indicators,
+* [`japandata.readings`](#readings): Kana and romaji readings of place names.
 
 <!-- TODO: Add a nice plot here  -->
 
@@ -31,7 +31,7 @@ License: CC BY-SA 4.0.
 
 `japandata.population` provides national, prefectural, and municipal demographic data annually from 1967.
 
-```
+```python
 from japandata.population.data import japan_pop, pref_pop, city_pop,
                                       japan_age, pref_age, city_age
 ```
@@ -44,7 +44,7 @@ See `notebooks/population.ipynb` for example uses of this dataset.
 Source: [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591).
 License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
 
-## japandata.indices 
+## japandata.indices
 
 `japandata.indices.data` provides fiscal health indices for municipal and prefectural governments annually from 2005. These indices are used to e.g. determine fiscal transfers between municipalities.
 
@@ -73,7 +73,7 @@ See `notebooks/readings.ipynb` for code to integrate this information with the m
 
 # Installation
 
-``` 
+```bash
 pip install japandata
 ```
 
