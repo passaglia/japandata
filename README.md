@@ -11,8 +11,6 @@
 
 <!-- TODO: Add a nice plot here  -->
 
-# Usage
-
 ## japandata.maps 
 
 `japandata.maps` provides topojson maps of Japan at the national, prefectural, or municipal level, from 1920 to today, at varying quality levels. These maps are sourced from [Asanobu Kitamoto, ROIS-DS Center for Open Data in the Humanities](https://geoshape.ex.nii.ac.jp/city/choropleth/) and licensed CC BY-SA 4.0.
@@ -23,7 +21,7 @@ from japandata.maps import load_map
 prefecture_map = load_map(date=2022, scale='jp_pref', quality='coarse')
 ```
 
-See `notebooks/maps.ipynb` to see the different types of maps that can be loaded and information about how to use them.
+See `notebooks/maps.ipynb` to understand the different types of maps that can be loaded.
 
 ### japandata.readings
 
@@ -34,8 +32,7 @@ See `notebooks/maps.ipynb` to see the different types of maps that can be loaded
 from japandata.readings import city_names, pref_names 
 ```
 
-See `notebooks/readings.ipynb` for examples of how to integrate this information with the maps.
-
+See `notebooks/readings.ipynb` for code to integrate this information with the maps.
 
 
 ## japandata.indices 
@@ -70,28 +67,23 @@ The `laspeyres` index here measures the salary of municipal government employees
 
 ## japandata.population
 
-`japandata.population` provides demographics of japan, at the national, prefectural, and municipal level, annually from 1967 to 2020. This information is sourced from the [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via the [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
+`japandata.population` provides annual demographic data at the national, prefectural, and municipal level. This data is from the [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via the [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591) and is licensed [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
 
 
 ```
-from japandata.population.data import japan_pop_df, pref_pop_df, local_pop_df
+from japandata.population.data import japan_pop, japan_age, pref_pop, pref_age, city_pop, city_age
 ```
 
-* `japan_pop_df`: Pandas dataframe with information about Japan, 1967-2020
-* `pref_pop_df`: Information about each prefecture, 1967-2020
-* `local_pop_df`: Information about each locality, 1995-2020. Contains redundancies: both designated cities and their constituent subdivisions are included.
+* `japan_pop`, `pref_pop`, `city_pop`: Contain total population, # of men and women, # of households, # of births, # deaths, and # migrations, for Japanese and non-Japanese residents.
+* `japan_age`, `pref_age`, `city_age`: Contain age distributions split by gender for Japanese and non-Japanese residents.
 
-The data gradually becomes more detailed as time goes on, with early data containing only the total population, the gender breakdown, and the number of households, while later data includes e.g. the number of births and deaths. Each year is a Japanese fiscal year, stretching from April 1st to March 31st of the subsequent calendar year. For example, the row marked '1995' contains the number of births from April 1st, 1995 to March 31st, 1996. The total population in the '1995' row is the population at the end of this period, on March 31st 1996.
+See `notebooks/population.ipynb` for example uses of this dataset.
 
 <!-- #### TODO
 
--- update docs for pop
+-- Show how to compute fertility rate
 
--- refactor and add docs for age data
-
--- Is there a way to compute fertility rate? 
-
--- Working population: 15-64
+-- Show how to compute working population: 15-64
 
 -->
 
