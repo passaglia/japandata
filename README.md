@@ -13,7 +13,7 @@
 
 ## japandata.maps 
 
-`japandata.maps` provides national, prefectural, and municipal topojson maps from 1920 to today.
+National, prefectural, and municipal topojson maps from 1920 to today.
 
 ```python
 from japandata.maps import load_map
@@ -29,7 +29,7 @@ See `notebooks/maps.ipynb` to understand the different types of maps that can be
 
 ## japandata.population
 
-`japandata.population` provides national, prefectural, and municipal demographic data annually from 1967.
+National, prefectural, and municipal demographic data annually from 1967.
 
 ```python
 from japandata.population.data import japan_pop, pref_pop, city_pop,
@@ -46,7 +46,7 @@ See `notebooks/population.ipynb` for example uses of this dataset.
 
 ## japandata.indices
 
-`japandata.indices.data` provides fiscal health indices for municipal and prefectural governments annually from 2005. These indices are used to e.g. determine fiscal transfers between municipalities.
+Fiscal health indices for municipal and prefectural governments annually from 2005. These indices are used to e.g. determine fiscal transfers between municipalities.
 
 ```python
 from japandata.indices import city, pref, prefmean
@@ -59,9 +59,9 @@ See `notebooks/indices.ipynb` for example uses of this dataset.
 - Source: [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html)
 - License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken)
 
-### japandata.readings
+## japandata.readings
 
-`japandata.readings` provides kana and romaji pronunciation information for Japanese place names.
+Kana and romaji pronunciation information for Japanese place names.
 
 
 ```python
