@@ -2,12 +2,12 @@
 
 [![PyPI](https://img.shields.io/pypi/v/japandata?label=latest%20release)](https://pypi.org/project/japandata/)
 
-**japandata** is a python library that provides easy access to detailed geographic data about Japan:
+**japandata** is a python library that provides easy access to detailed geographic data about Japan.
 
-* [`japandata.maps`](#maps): Maps of Japan, its prefectures, and municipalities,
-* [`japandata.population`](#population): Demographic data,
-* [`japandata.indices`](#indices): Economic health indicators,
-* [`japandata.readings`](#readings): Kana and romaji readings of place names.
+* [`japandata.maps`](#maps): Maps of Japan, its prefectures, and municipalities
+* [`japandata.population`](#population): Demographic data
+* [`japandata.indices`](#indices): Economic health indicators
+* [`japandata.readings`](#readings): Kana and romaji readings of place names
 
 <!-- TODO: Add a nice plot here  -->
 
@@ -25,7 +25,7 @@ See `notebooks/maps.ipynb` to understand the different types of maps that can be
 
 Source: [Asanobu Kitamoto, ROIS-DS Center for Open Data in the Humanities](https://geoshape.ex.nii.ac.jp/city/choropleth/)
 
-License: CC BY-SA 4.0.
+License: CC BY-SA 4.0
 
 
 ## japandata.population
@@ -42,9 +42,9 @@ from japandata.population.data import japan_pop, pref_pop, city_pop,
 
 See `notebooks/population.ipynb` for example uses of this dataset.
 
-Source: [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591).
+Source: [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591)
 
-License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
+License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken)
 
 ## japandata.indices
 
@@ -58,9 +58,9 @@ from japandata.indices import city, pref, prefmean
 
 See `notebooks/indices.ipynb` for example uses of this dataset.
 
-Source: [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html).
+Source: [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html)
 
-License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
+License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken)
 
 ### japandata.readings
 
@@ -83,4 +83,4 @@ $ pip install japandata
 # Licenses
 
 - Code: MIT
-- Data: Noted above.
+- Data: Noted above
