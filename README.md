@@ -77,11 +77,10 @@ See `notebooks/readings.ipynb` for code to integrate this information with the m
 # Installation
 
 ```bash
-pip install japandata
+$ pip install japandata
 ```
 
-# License
+# Licenses
 
-Code: MIT
-
-Data: Noted above.
+- Code: MIT
+- Data: Noted above.
