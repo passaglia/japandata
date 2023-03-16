@@ -44,14 +44,6 @@ See `notebooks/population.ipynb` for example uses of this dataset.
 Source: [Basic Register of Residents (住民基本台帳)](https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/gaiyou.html) via [Official Statistics Portal Site](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200241&tstat=000001039591).
 License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
 
-<!-- #### TODO
-
--- Show how to compute fertility rate
-
--- Show how to compute working population: 15-64
-
--->
-
 ## japandata.indices 
 
 `japandata.indices.data` provides fiscal health indices for municipal and prefectural governments annually from 2005. These indices are used to e.g. determine fiscal transfers between municipalities.
@@ -66,23 +58,6 @@ See `notebooks/indices.ipynb` for example uses of this dataset.
 
 Source: [Ministry of Internal Affairs](https://www.soumu.go.jp/iken/shihyo_ichiran.html).
 License: [CC BY 4.0 International](https://www.soumu.go.jp/menu_kyotsuu/policy/tyosaku.html#tyosakuken).
-
-<!-- 
-The `economic-strength-index` (財政力指数) shows the economic strength of a local government. It is the ratio of the standardized tax receipts (基準財政収入額 -- tax receipts times 0.75) to the standardized economic burden (基準財政需要額 -- an estimated cost required to provide government services), averaged over the past three years. If the economic strength index is greater than 1, the local government has an economic surplus and will transfer funds (地方交付税) to local governments with an economic strength index less than one.
-
-For the 23 special wards of Tokyo, which all pay transfer taxes to the rest of Japan, the value in this column is instead a different figure which is used to determine internal financial transfers between the wards (特別区財政調整交付金).
-
-The `regular-expense-rate` (経常収支比率) is an index which shows the economic flexibility of a local government. It is the ratio of general expenses (such as personnel expenses, welfare expenses, and debt repayments) to general, non-specified income (local tax income, income from tax transfered between municipalities, and debt issuances), expressed as percentage. The higher this percentage, the less financial wiggle room a municipality has.
-
-The `debt-service-rate` (実質公債費比率) is the ratio of the annual cost of debt servicing (repaying principal and interest) to the general non-specified income of a municality (more precisely the 標準財政規模), averaged over the preceding three years and expressed as a percentage. Municipalities face increasing restrictions on debt issuances when this ratio exceeds 18%, 25%, and 35%.
-
-Available from 2008 (H20) and onwards, the `future-burden-rate` (将来負担比率) is the ratio of the total future liabilities (such as debt) to the annual income (標準財政規模) expressed as a percentage. A law indicates municipalities should remain below 350% and prefectures and designated cities below 400%.
-
-Prior to 2008, the `debt-restriction-rate` (起債制限比率) was used to regulate municipal debt issuances. It is similar to the `debt-service-rate` but computed slightly differently.
-
-The `laspeyres` index here measures the salary of municipal government employees relative to national government employees, controlling for educational history and seniority. A figure greater than 100 indicates municipal employees are being paid more than national employees. -->
-
-
 
 ### japandata.readings
 
