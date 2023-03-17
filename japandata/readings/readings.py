@@ -11,6 +11,7 @@ from pathlib import Path
 import jaconv
 import pandas as pd
 import romkan
+from japadata.utils import logger
 
 CACHE_FOLDER = Path(Path(__file__).parent, "cache/")
 
@@ -27,7 +28,7 @@ def fetch_data():
         cached.parent.mkdir(
             parents=True, exist_ok=True
         )  # recreate any required subdirectories locally
-
+        logger.info("Fetching data for japandata.readings")
         from japandata.download import DOWNLOAD_INFO, download_progress
 
         url = DOWNLOAD_INFO["readings"]["latest"]["url"]

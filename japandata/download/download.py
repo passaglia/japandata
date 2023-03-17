@@ -22,6 +22,8 @@ from urllib.request import urlretrieve
 import requests
 from tqdm import tqdm
 
+from japandata.utils import logger
+
 # DOWNLOAD_INFO_URL = (
 #     "https://raw.githubusercontent.com/passaglia/japandata/master/downloads.json"
 # )
@@ -44,6 +46,7 @@ def get_json(url, desc):
 
 
 DOWNLOAD_INFO = get_json(DOWNLOAD_INFO_URL, "download info")
+
 
 # This is used to show progress when downloading.
 # see here: https://github.com/tqdm/tqdm#hooks-and-callbacks

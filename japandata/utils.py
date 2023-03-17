@@ -1,4 +1,8 @@
 import json
+import logging.config
+import sys
+
+from rich.logging import RichHandler
 
 
 def load_dict(filepath: str) -> dict:
@@ -54,3 +58,44 @@ def western_to_japanese(year):
         return "S" + str(year - 1925)
     else:
         raise ValueError(f"Invalid year: {year}")
+
+
+# Logger
+logging_config = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "minimal": {"format": "%(message)s"},
+        "detailed": {
+            "format": "%(levelname)s %(asctime)s [%(name)s:%(filename)s:%(funcName)s:%(lineno)d]\n%(message)s\n"
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
+            "formatter": "minimal",
+            "level": logging.DEBUG,
+        },
+        "info": {
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
+            "formatter": "detailed",
+            "level": logging.INFO,
+        },
+        "error": {
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
+            "formatter": "detailed",
+            "level": logging.ERROR,
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": logging.INFO,
+        "propagate": True,
+    },
+}
+logging.config.dictConfig(logging_config)
+logger = logging.getLogger()
+logger.handlers[0] = RichHandler(markup=True)

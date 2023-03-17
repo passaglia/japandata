@@ -13,10 +13,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-CACHE_FOLDER = Path(Path(__file__).parent, "cache/")
+from japandata.utils import logger
 
-# Implement japanese and non-japanese in age
-# Implement in load all age piece
+CACHE_FOLDER = Path(Path(__file__).parent, "cache/")
 
 """
 Data fetching and caching
@@ -33,9 +32,9 @@ def fetch_data():
     cached = Path(CACHE_FOLDER, "population/")
     archive = Path(CACHE_FOLDER, "indices.tar.gz")
     if not cached.exists():
-        cached.parent.mkdir(
-            parents=True, exist_ok=True
-        )  # recreate any required subdirectories cityly
+        cached.parent.mkdir(parents=True, exist_ok=True)  # recreate any required subdirectories
+
+        logger.info("Fetching data for japandata.population")
 
         from japandata.download import DOWNLOAD_INFO, download_progress
 
@@ -57,6 +56,7 @@ DATA_FOLDER = fetch_data()
 def load_age_year(year, datalevel="prefecture", poptype="resident"):
     assert datalevel in ["prefecture", "city"]
     assert poptype in ["resident", "japanese", "non-japanese"]
+    logger.info(f"Processing age data for {year} {datalevel} {poptype}")
 
     fileextension = ".xls"
     skiprows = 2
@@ -155,7 +155,7 @@ def load_age_year(year, datalevel="prefecture", poptype="resident"):
         df = df.drop("total-pop-corrected", axis=1)
 
     # SELF-CONSISTENCY TESTS #
-    # men+women = total?
+    # men+women = total
     grouped = df.drop(
         ["code6digit", "prefecture", "city", "gender"],
         axis=1,
@@ -229,6 +229,7 @@ def load_pop_year(year, datalevel="prefecture", poptype="resident"):
     assert datalevel in ["prefecture", "city"]
     assert poptype in ["resident", "japanese", "non-japanese"]
 
+    logger.info(f"Processing pop data for {year} {datalevel} {poptype}")
     fileextension = ".xls"
     skiprows = 4
     if year >= 2021:
@@ -433,7 +434,6 @@ def load_pop():
     complete_city_df = pd.DataFrame()
 
     for poptype in poptypes:
-        print(poptype)
         if poptype == "resident":
             years = np.arange(1968, 2023)
         else:
@@ -443,7 +443,6 @@ def load_pop():
         pref_df = pd.DataFrame()
         city_df = pd.DataFrame()
         for year in years:
-            print(year)
             pref_df_year = load_pop_year(year, poptype=poptype, datalevel="prefecture")
             japan_df_year = (
                 pref_df_year[pref_df_year["prefecture"] == "合計"]
@@ -533,7 +532,6 @@ def load_age():
     complete_city_df = pd.DataFrame()
 
     for poptype in poptypes:
-        print(poptype)
         if poptype == "resident":
             years = np.arange(1994, 2023)
         else:
@@ -543,7 +541,6 @@ def load_age():
         pref_df = pd.DataFrame()
         city_df = pd.DataFrame()
         for year in years:
-            print(year)
             pref_df_year = load_age_year(year, poptype=poptype, datalevel="prefecture")
             japan_df_year = (
                 pref_df_year[pref_df_year["prefecture"] == "合計"]

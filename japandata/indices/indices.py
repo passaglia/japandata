@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 from japandata.maps import load_map
-from japandata.utils import japanese_to_western, western_to_japanese
+from japandata.utils import japanese_to_western, logger, western_to_japanese
 
 CACHE_FOLDER = Path(Path(__file__).parent, "cache/")
 
@@ -37,6 +37,8 @@ def fetch_data():
         cached.parent.mkdir(
             parents=True, exist_ok=True
         )  # recreate any required subdirectories cityly
+
+        logger.info("Fetching data for japandata.indices")
 
         from japandata.download import DOWNLOAD_INFO, download_progress
 
@@ -184,7 +186,7 @@ def load_all():
     df_designatedcity_list = []
     df_capital_list = []
     for year in years:
-        print(year)
+        logger.info(f"Processing index data for {year}")
         df_pref = load_year(year, "prefecture")
         df_prefmean = load_year(year, "prefecturemean")
         df_city = load_year(year, "city")

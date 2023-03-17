@@ -2,3 +2,4 @@ matplotlib
 folium
 seaborn
 plotly
+mapclassify
