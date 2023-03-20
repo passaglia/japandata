@@ -9,6 +9,8 @@
 * [`japandata.indices`](#indices): Fiscal health indicators
 * [`japandata.readings`](#readings): Kana and romaji readings of place names
 
+Check out my blog post for some of the [motivation](https://passaglia.jp/japandata/) behind this package.
+
 <!-- TODO: Add a nice plot here  -->
 
 ## japandata.maps 
