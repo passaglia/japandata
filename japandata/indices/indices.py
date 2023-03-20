@@ -186,7 +186,6 @@ def load_all():
     df_designatedcity_list = []
     df_capital_list = []
     for year in years:
-        logger.info(f"Processing index data for {year}")
         df_pref = load_year(year, "prefecture")
         df_prefmean = load_year(year, "prefecturemean")
         df_city = load_year(year, "city")
@@ -241,7 +240,9 @@ def load_all():
     df_pref = pd.concat(df_pref_list, axis=0, join="outer", ignore_index=True)
     df_prefmean = pd.concat(df_prefmean_list, axis=0, join="outer", ignore_index=True)
     df_city = pd.concat(df_city_list, axis=0, join="outer", ignore_index=True)
-    df_designatedcity = pd.concat(df_designatedcity_list, axis=0, join="outer", ignore_index=True)
+    df_designatedcity = pd.concat(
+        df_designatedcity_list, axis=0, join="outer", ignore_index=True
+    )
     df_capital = pd.concat(df_capital_list, axis=0, join="outer", ignore_index=True)
 
     return (df_pref, df_prefmean, df_city, df_designatedcity, df_capital)
@@ -266,6 +267,7 @@ def fetch_dataframes():
         and CAPITAL_CACHE.exists()
         and CITY_CACHE.exists()
     ):
+        logger.info("Generating cache for japandata.indices")
         (df_pref, df_prefmean, df_city, df_designatedcity, df_capital) = load_all()
         df_pref.to_parquet(PREF_CACHE)
         df_prefmean.to_parquet(PREFMEAN_CACHE)

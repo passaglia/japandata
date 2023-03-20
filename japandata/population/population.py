@@ -32,7 +32,9 @@ def fetch_data():
     cached = Path(CACHE_FOLDER, "population/")
     archive = Path(CACHE_FOLDER, "indices.tar.gz")
     if not cached.exists():
-        cached.parent.mkdir(parents=True, exist_ok=True)  # recreate any required subdirectories
+        cached.parent.mkdir(
+            parents=True, exist_ok=True
+        )  # recreate any required subdirectories
 
         logger.info("Fetching data for japandata.population")
 
@@ -201,7 +203,9 @@ def load_age_year(year, datalevel="prefecture", poptype="resident"):
 
     # Clean up column order
     sorted_cols = ["year", "nationality"]
-    df = df.reindex(columns=(sorted_cols + list([a for a in df.columns if a not in sorted_cols])))
+    df = df.reindex(
+        columns=(sorted_cols + list([a for a in df.columns if a not in sorted_cols]))
+    )
 
     # Clean up types
     type_dict = {
@@ -351,7 +355,9 @@ def load_pop_year(year, datalevel="prefecture", poptype="resident"):
     if year >= 1980:
         assert (df["moved-in"] + df["births"] + df["other-in"] == df["total-in"]).all()
         if year != 1996 and datalevel != "city":
-            assert (df["moved-out"] + df["deaths"] + df["other-out"] == df["total-out"]).all()
+            assert (
+                df["moved-out"] + df["deaths"] + df["other-out"] == df["total-out"]
+            ).all()
         assert (df["total-in"] - df["total-out"] == df["in-minus-out"]).all()
         assert (df["births"] - df["deaths"] == df["births-minus-deaths"]).all()
         assert (
@@ -359,8 +365,12 @@ def load_pop_year(year, datalevel="prefecture", poptype="resident"):
             == df["social-in-minus-social-out"]
         ).all()
     if year >= 2013:
-        assert (df["moved-in-domestic"] + df["moved-in-international"] == df["moved-in"]).all()
-        assert (df["moved-out-domestic"] + df["moved-out-international"] == df["moved-out"]).all()
+        assert (
+            df["moved-in-domestic"] + df["moved-in-international"] == df["moved-in"]
+        ).all()
+        assert (
+            df["moved-out-domestic"] + df["moved-out-international"] == df["moved-out"]
+        ).all()
     if datalevel == "prefecture":
         assert (
             df.drop(df.loc[df["prefecture"] == "合計"].index)
@@ -403,7 +413,9 @@ def load_pop_year(year, datalevel="prefecture", poptype="resident"):
 
     # Clean up column order
     sorted_cols = ["year", "nationality"]
-    df = df.reindex(columns=(sorted_cols + list([a for a in df.columns if a not in sorted_cols])))
+    df = df.reindex(
+        columns=(sorted_cols + list([a for a in df.columns if a not in sorted_cols]))
+    )
 
     # Clean up types
     type_dict = {
@@ -470,7 +482,9 @@ def load_pop():
                     .reset_index(drop=True)
                 )
                 # checking consistency of the japan table and the city table
-                assert (japan_df_year.values == city_df_year_prefrows.iloc[0].values).all()
+                assert (
+                    japan_df_year.values == city_df_year_prefrows.iloc[0].values
+                ).all()
                 # checking consistency of the prefecture table and the city table
                 assert (
                     pref_df_year.drop(
@@ -566,7 +580,9 @@ def load_age():
                 )
 
                 # checking consistency of the japan table and the city table
-                assert (japan_df_year.values == city_df_year_prefrows.iloc[0:3].values).all()
+                assert (
+                    japan_df_year.values == city_df_year_prefrows.iloc[0:3].values
+                ).all()
 
                 # checking consistency of the prefecture table and the city table
                 assert (
@@ -619,6 +635,7 @@ def fetch_dataframes():
         and CITY_POP_CACHE.exists()
         and CITY_AGE_CACHE.exists()
     ):
+        logger.info("Generating cache for japandata.population")
         japan_age, pref_age, city_age = load_age()
         japan_pop, pref_pop, city_pop = load_pop()
 
