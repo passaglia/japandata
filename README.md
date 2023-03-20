@@ -6,7 +6,7 @@
 
 * [`japandata.maps`](#maps): Maps of Japan, its prefectures, and municipalities
 * [`japandata.population`](#population): Demographic data
-* [`japandata.indices`](#indices): Economic health indicators
+* [`japandata.indices`](#indices): Fiscal health indicators
 * [`japandata.readings`](#readings): Kana and romaji readings of place names
 
 <!-- TODO: Add a nice plot here  -->
