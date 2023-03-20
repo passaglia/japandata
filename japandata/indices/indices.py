@@ -240,9 +240,7 @@ def load_all():
     df_pref = pd.concat(df_pref_list, axis=0, join="outer", ignore_index=True)
     df_prefmean = pd.concat(df_prefmean_list, axis=0, join="outer", ignore_index=True)
     df_city = pd.concat(df_city_list, axis=0, join="outer", ignore_index=True)
-    df_designatedcity = pd.concat(
-        df_designatedcity_list, axis=0, join="outer", ignore_index=True
-    )
+    df_designatedcity = pd.concat(df_designatedcity_list, axis=0, join="outer", ignore_index=True)
     df_capital = pd.concat(df_capital_list, axis=0, join="outer", ignore_index=True)
 
     return (df_pref, df_prefmean, df_city, df_designatedcity, df_capital)

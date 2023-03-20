@@ -21,7 +21,7 @@ dynamic = ["dependencies"]
 "Bug Tracker" = "https://github.com/passaglia/japandata/issues"
 
 [tool.setuptools.dynamic]
-dependencies = {file = ["./requirements/requirements.txt", "./requirements/requirements-dev.txt"]}
+dependencies = {file = ["./requirements/requirements.txt"]}
 
 [tool.setuptools]
 packages = ["japandata", "japandata.maps", "japandata.population", "japandata.readings", "japandata.indices"]

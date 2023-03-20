@@ -11,6 +11,7 @@ from pathlib import Path
 import jaconv
 import pandas as pd
 import romkan
+
 from japandata.utils import logger
 
 CACHE_FOLDER = Path(Path(__file__).parent, "cache/")
@@ -44,9 +45,7 @@ def load_readings_R2file(fpath):
     df.drop(["code6digit"], inplace=True, axis=1)
 
     prefecture_df = (
-        df.loc[pd.isna(df["city"])]
-        .drop(["city", "city-kana"], axis=1)
-        .reset_index(drop=True)
+        df.loc[pd.isna(df["city"])].drop(["city", "city-kana"], axis=1).reset_index(drop=True)
     )
     prefecture_df["code"] = prefecture_df["code"].apply(lambda s: s[0:2])
     prefecture_df["prefecture-romaji"] = (
@@ -66,9 +65,7 @@ def load_readings_R2file(fpath):
         .str.replace("kyoutofu", "kyouto")
     )
     df["city-romaji"] = (
-        df["city-kana"]
-        .apply(lambda s: romkan.to_roma(jaconv.h2z(s)))
-        .str.replace("du", "zu")
+        df["city-kana"].apply(lambda s: romkan.to_roma(jaconv.h2z(s))).str.replace("du", "zu")
     )
 
     def stripper(row):

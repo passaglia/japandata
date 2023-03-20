@@ -155,9 +155,7 @@ def join_cities(city_df):
     from shapely.validation import make_valid
 
     city_df["geometry"] = city_df["geometry"].apply(make_valid)
-    city_df = city_df.drop(
-        ["city", "bureau", "county", "code", "special"], axis=1, errors="ignore"
-    )
+    city_df = city_df.drop(["city", "bureau", "county", "code", "special"], axis=1, errors="ignore")
     pref_df = city_df.dissolve("prefecture").reset_index()
     pref_df["geometry"] = (
         pref_df.to_crs("EPSG:30166").buffer(1000).buffer(-1000).to_crs(pref_df.crs)
@@ -167,7 +165,6 @@ def join_cities(city_df):
 
 
 def join_prefectures(pref_df):
-    from shapely.ops import unary_union
     from shapely.validation import make_valid
 
     pref_df["geometry"] = pref_df["geometry"].apply(make_valid)
@@ -353,9 +350,7 @@ def load_map(date=2022, scale="jp_city_dc", quality="coarse"):
         date = np.datetime64(str(date) + "-12-31")
 
     try:
-        map_date = str(
-            np.array(AVAILABLE_DATES)[np.where(date >= np.array(AVAILABLE_DATES))][-1]
-        )
+        map_date = str(np.array(AVAILABLE_DATES)[np.where(date >= np.array(AVAILABLE_DATES))][-1])
     except IndexError as e:
         raise Exception(f"date must be >= than {str(np.min(AVAILABLE_DATES))}") from e
 
