@@ -155,7 +155,9 @@ def join_cities(city_df):
     from shapely.validation import make_valid
 
     city_df["geometry"] = city_df["geometry"].apply(make_valid)
-    city_df = city_df.drop(["city", "bureau", "county", "code", "special"], axis=1, errors="ignore")
+    city_df = city_df.drop(
+        ["city", "bureau", "county", "code", "special"], axis=1, errors="ignore"
+    )
     pref_df = city_df.dissolve("prefecture").reset_index()
     pref_df["geometry"] = (
         pref_df.to_crs("EPSG:30166").buffer(1000).buffer(-1000).to_crs(pref_df.crs)
@@ -188,7 +190,7 @@ def stylize_city(city_df):
     city_df = city_df.to_crs("EPSG:30166")
     topojson = tp.Topology(city_df, prequantize=False)
     city_df = topojson.toposimplify(
-        2000,  # this is in meters
+        500,  # this is in meters
         prevent_oversimplify=True,
     ).to_gdf()
     noncont = ["30207", "30203", "20385"]
@@ -220,7 +222,7 @@ def stylize_pref(pref_df):
     pref_df = pref_df.to_crs("EPSG:30166")
     topojson = tp.Topology(pref_df, prequantize=False)
     pref_df = topojson.toposimplify(
-        2000,  # this is in meters
+        500,  # this is in meters
         prevent_oversimplify=False,
     ).to_gdf()
 
@@ -249,7 +251,7 @@ def stylize_jp(jp_df):
     jp_df = jp_df.to_crs("EPSG:30166")
     topojson = tp.Topology(jp_df, prequantize=False)
     jp_df = topojson.toposimplify(
-        2000,  # this is in meters
+        500,  # this is in meters
         prevent_oversimplify=False,
     ).to_gdf()
     jp_df["geometry"] = [
@@ -350,7 +352,9 @@ def load_map(date=2022, scale="jp_city_dc", quality="coarse"):
         date = np.datetime64(str(date) + "-12-31")
 
     try:
-        map_date = str(np.array(AVAILABLE_DATES)[np.where(date >= np.array(AVAILABLE_DATES))][-1])
+        map_date = str(
+            np.array(AVAILABLE_DATES)[np.where(date >= np.array(AVAILABLE_DATES))][-1]
+        )
     except IndexError as e:
         raise Exception(f"date must be >= than {str(np.min(AVAILABLE_DATES))}") from e
 
