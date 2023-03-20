@@ -24,7 +24,7 @@ dynamic = ["dependencies"]
 dependencies = {file = ["./requirements/requirements.txt"]}
 
 [tool.setuptools]
-packages = ["japandata", "japandata.maps", "japandata.population", "japandata.readings", "japandata.indices"]
+packages = ["japandata", "japandata.maps", "japandata.population", "japandata.readings", "japandata.indices", "japandata.download"]
 
 [tool.flake8]
 exclude = "venv"
